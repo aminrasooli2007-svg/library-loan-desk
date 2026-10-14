@@ -1,0 +1,51 @@
+
+export const initialBooks = [
+  {
+    id: 1,
+    title: "JavaScript for Beginners",
+    author: "John Smith",
+    subject: "Technology",
+    totalCopies: 2,
+    borrowedCopies: 0,
+  },
+  {
+    id: 2,
+    title: "Learning React",
+    author: "Sarah Johnson",
+    subject: "Technology",
+    totalCopies: 4,
+    borrowedCopies: 2,
+  },
+  {
+    id: 3,
+    title: "English Grammar in Use",
+    author: "Raymond Murphy",
+    subject: "Languages",
+    totalCopies: 3,
+    borrowedCopies: 1,
+  },
+  {
+    id: 4,
+    title: "The Alchemist",
+    author: "Paulo Coelho",
+    subject: "Literature",
+    totalCopies: 5,
+    borrowedCopies: 3,
+  },
+  {
+    id: 5,
+    title: "Python Crash Course",
+    author: "Eric Matthes",
+    subject: "Technology",
+    totalCopies: 3,
+    borrowedCopies: 0,
+  },
+  {
+    id: 6,
+    title: "Pride and Prejudice",
+    author: "Jane Austen",
+    subject: "Literature",
+    totalCopies: 2,
+    borrowedCopies: 1,
+  },
+];
