@@ -1,5 +1,18 @@
-
+import { initialBooks } from "./data/books";
 function App() {
+
+
+  const totalBooks = initialBooks.length
+
+  const borrowedCopies = initialBooks.reduce(
+    (total, book) => total + book.borrowedCopies,
+    0
+  )
+
+  const availableCopies = initialBooks.reduce(
+    (total, book) => total + (book.totalCopies - book.borrowedCopies),
+    0
+  );
   return (
     <div className="min-h-screen bg-[#E7E7ED] text-[#252432]">
       <header className="border-b border-[#D5D5E0] bg-white">
@@ -55,7 +68,7 @@ function App() {
                 Total Books
               </p>
               <p className="text-3xl font-bold tracking-tight text-[#4033C3]">
-                0
+                {totalBooks}
               </p>
             </div>
 
@@ -64,7 +77,7 @@ function App() {
                 Borrowed Copies
               </p>
               <p className="text-3xl font-bold tracking-tight text-[#4033C3]">
-                0
+                {borrowedCopies}
               </p>
             </div>
 
@@ -73,7 +86,7 @@ function App() {
                 Available Copies
               </p>
               <p className="text-3xl font-bold tracking-tight text-[#4033C3]">
-                0
+                {availableCopies}
               </p>
             </div>
           </div>
