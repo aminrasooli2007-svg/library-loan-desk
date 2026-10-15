@@ -4,6 +4,8 @@ import { initialBooks } from "../data/books";
 
 function LoanDesk() {
   const [selectedBooks, setSelectedBooks] = useState([]);
+  const [borrowerName, setBorrowerName] = useState("");
+  const [dueDate, setDueDate] = useState("");
 
   function addBook(book) {
     setSelectedBooks([...selectedBooks, { ...book, quantity: 1 }]);
@@ -205,6 +207,66 @@ function LoanDesk() {
               ))}
             </div>
           )}
+        </div>
+
+        <div className="mt-8 border-t border-[#E7E7ED] pt-6">
+          <h2 className="text-lg font-semibold text-[#252432]">
+            Borrower Information
+          </h2>
+
+          <p className="mt-2 text-sm text-[#777783]">
+            Enter the borrower's information before confirming the loan.
+          </p>
+
+          <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div>
+              <label
+                htmlFor="borrowerName"
+                className="mb-2 block text-sm font-medium text-[#252432]"
+              >
+                Borrower Name
+              </label>
+
+              <input
+                id="borrowerName"
+                type="text"
+                value={borrowerName}
+                onChange={(event) => setBorrowerName(event.target.value)}
+                placeholder="Enter borrower name"
+                className="w-full rounded-xl border border-[#DCDCE6] px-4 py-3 text-sm outline-none focus:border-[#4033C3] focus:ring-2 focus:ring-[#4033C3]/10"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="dueDate"
+                className="mb-2 block text-sm font-medium text-[#252432]"
+              >
+                Due Date
+              </label>
+
+              <input
+                id="dueDate"
+                type="date"
+                min={new Date().toLocaleDateString("en-CA")}
+                value={dueDate}
+                onChange={(event) => setDueDate(event.target.value)}
+                className="w-full rounded-xl border border-[#DCDCE6] px-4 py-3 text-sm outline-none focus:border-[#4033C3] focus:ring-2 focus:ring-[#4033C3]/10"
+              />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={
+              !borrowerName.trim() ||
+              !dueDate ||
+              selectedBooks.length === 0
+            }
+            className="mt-6 w-full rounded-xl bg-[#4033C3] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#3328A0] disabled:cursor-not-allowed disabled:bg-[#E7E7ED] disabled:text-[#777783]"
+          >
+            Confirm Loan
+          </button>
         </div>
       </section>
     </main>
