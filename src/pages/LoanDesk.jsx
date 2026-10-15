@@ -1,5 +1,10 @@
+
+import { useState } from "react";
 import { initialBooks } from "../data/books";
+
 function LoanDesk() {
+  const [selectedBooks, setSelectedBooks] = useState([]);
+
   return (
     <main className="mx-auto min-h-screen max-w-6xl px-6 py-12">
       <section className="mb-8">
@@ -42,60 +47,103 @@ function LoanDesk() {
         </div>
       </section>
 
-      
-        <section className="mt-8 rounded-2xl border border-[#DCDCE6] bg-white p-6 shadow-sm">
-  <div className="mb-6">
-    <h2 className="text-lg font-semibold text-[#252432]">
-      Select a Book
-    </h2>
+      <section className="mt-8 rounded-2xl border border-[#DCDCE6] bg-white p-6 shadow-sm">
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-[#252432]">
+            Select a Book
+          </h2>
 
-    <p className="mt-2 text-sm text-[#777783]">
-      Choose a book from the available library collection.
-    </p>
-  </div>
-
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-    {initialBooks.map((book) => {
-      const availableCopies = book.totalCopies - book.borrowedCopies;
-
-      return (
-        <div
-          key={book.id}
-          className="rounded-xl border border-[#E7E7ED] p-5 transition hover:border-[#4033C3]"
-        >
-          <p className="text-xs font-medium text-[#E66B3B]">
-            {book.subject}
+          <p className="mt-2 text-sm text-[#777783]">
+            Choose a book from the available library collection.
           </p>
-
-          <h3 className="mt-2 font-semibold text-[#252432]">
-            {book.title}
-          </h3>
-
-          <p className="mt-1 text-sm text-[#777783]">
-            By {book.author}
-          </p>
-
-          <div className="mt-4 flex items-center justify-between gap-3">
-            <p className="text-sm text-[#777783]">
-              Available: {availableCopies}
-            </p>
-
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                availableCopies > 0
-                  ? "bg-[#4033C3]/10 text-[#4033C3]"
-                  : "bg-[#E7E7ED] text-[#777783]"
-              }`}
-            >
-              {availableCopies > 0 ? "Available" : "Unavailable"}
-            </span>
-          </div>
         </div>
-      );
-    })}
-  </div>
-</section>
-      
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {initialBooks.map((book) => {
+            const availableCopies =
+              book.totalCopies - book.borrowedCopies;
+
+            const isSelected = selectedBooks.some(
+              (selectedBook) => selectedBook.id === book.id
+            );
+
+            return (
+              <div
+                key={book.id}
+                className="rounded-xl border border-[#E7E7ED] p-5 transition hover:border-[#4033C3]"
+              >
+                <p className="text-xs font-medium text-[#E66B3B]">
+                  {book.subject}
+                </p>
+
+                <h3 className="mt-2 font-semibold text-[#252432]">
+                  {book.title}
+                </h3>
+
+                <p className="mt-1 text-sm text-[#777783]">
+                  By {book.author}
+                </p>
+
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <p className="text-sm text-[#777783]">
+                    Available: {availableCopies}
+                  </p>
+
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-medium ${
+                      availableCopies > 0
+                        ? "bg-[#4033C3]/10 text-[#4033C3]"
+                        : "bg-[#E7E7ED] text-[#777783]"
+                    }`}
+                  >
+                    {availableCopies > 0 ? "Available" : "Unavailable"}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={availableCopies === 0 || isSelected}
+                  onClick={() =>
+                    setSelectedBooks([...selectedBooks, book])
+                  }
+                  className="mt-4 w-full rounded-xl bg-[#4033C3] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#3328A0] disabled:cursor-not-allowed disabled:bg-[#E7E7ED] disabled:text-[#777783]"
+                >
+                  {isSelected ? "Added to Loan" : "Add to Loan"}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-8 border-t border-[#E7E7ED] pt-6">
+          <h2 className="text-lg font-semibold text-[#252432]">
+            Selected Books ({selectedBooks.length})
+          </h2>
+
+          {selectedBooks.length === 0 ? (
+            <p className="mt-3 text-sm text-[#777783]">
+              No books selected yet.
+            </p>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {selectedBooks.map((book) => (
+                <div
+                  key={book.id}
+                  className="rounded-xl border border-[#E7E7ED] p-4"
+                >
+                  <p className="font-medium text-[#252432]">
+                    {book.title}
+                  </p>
+
+                  <p className="mt-1 text-sm text-[#777783]">
+                    {book.author}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
     </main>
   );
 }
