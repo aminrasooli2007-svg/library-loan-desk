@@ -5,6 +5,40 @@ import { initialBooks } from "../data/books";
 function LoanDesk() {
   const [selectedBooks, setSelectedBooks] = useState([]);
 
+  function addBook(book) {
+    setSelectedBooks([...selectedBooks, { ...book, quantity: 1 }]);
+  }
+
+  function increaseQuantity(bookId) {
+    setSelectedBooks(
+      selectedBooks.map((book) => {
+        if (book.id === bookId) {
+          const availableCopies = book.totalCopies - book.borrowedCopies;
+
+          if (book.quantity < availableCopies) {
+            return { ...book, quantity: book.quantity + 1 };
+          }
+        }
+
+        return book;
+      })
+    );
+  }
+
+  function decreaseQuantity(bookId) {
+    setSelectedBooks(
+      selectedBooks
+        .map((book) => {
+          if (book.id === bookId) {
+            return { ...book, quantity: book.quantity - 1 };
+          }
+
+          return book;
+        })
+        .filter((book) => book.quantity > 0)
+    );
+  }
+
   return (
     <main className="mx-auto min-h-screen max-w-6xl px-6 py-12">
       <section className="mb-8">
@@ -60,9 +94,7 @@ function LoanDesk() {
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {initialBooks.map((book) => {
-            const availableCopies =
-              book.totalCopies - book.borrowedCopies;
-
+            const availableCopies = book.totalCopies - book.borrowedCopies;
             const isSelected = selectedBooks.some(
               (selectedBook) => selectedBook.id === book.id
             );
@@ -103,9 +135,7 @@ function LoanDesk() {
                 <button
                   type="button"
                   disabled={availableCopies === 0 || isSelected}
-                  onClick={() =>
-                    setSelectedBooks([...selectedBooks, book])
-                  }
+                  onClick={() => addBook(book)}
                   className="mt-4 w-full rounded-xl bg-[#4033C3] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#3328A0] disabled:cursor-not-allowed disabled:bg-[#E7E7ED] disabled:text-[#777783]"
                 >
                   {isSelected ? "Added to Loan" : "Add to Loan"}
@@ -129,15 +159,48 @@ function LoanDesk() {
               {selectedBooks.map((book) => (
                 <div
                   key={book.id}
-                  className="rounded-xl border border-[#E7E7ED] p-4"
+                  className="flex flex-col gap-4 rounded-xl border border-[#E7E7ED] p-4 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <p className="font-medium text-[#252432]">
-                    {book.title}
-                  </p>
+                  <div>
+                    <p className="font-medium text-[#252432]">
+                      {book.title}
+                    </p>
 
-                  <p className="mt-1 text-sm text-[#777783]">
-                    {book.author}
-                  </p>
+                    <p className="mt-1 text-sm text-[#777783]">
+                      {book.author}
+                    </p>
+
+                    <p className="mt-2 text-sm text-[#777783]">
+                      Quantity: {book.quantity}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => decreaseQuantity(book.id)}
+                      className="h-10 w-10 rounded-lg border border-[#DCDCE6] font-semibold text-[#4033C3] hover:bg-[#4033C3]/10"
+                      aria-label={`Decrease quantity of ${book.title}`}
+                    >
+                      −
+                    </button>
+
+                    <span className="min-w-6 text-center font-semibold">
+                      {book.quantity}
+                    </span>
+
+                    <button
+                      type="button"
+                      disabled={
+                        book.quantity >= book.totalCopies - book.borrowedCopies
+                      }
+                      onClick={() => increaseQuantity(book.id)}
+                      className="h-10 w-10 rounded-lg border border-[#DCDCE6] font-semibold text-[#4033C3] hover:bg-[#4033C3]/10 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label={`Increase quantity of ${book.title}`}
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
