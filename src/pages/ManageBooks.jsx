@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { BookPlus, BookOpen, Plus, Search } from "lucide-react";
 import { initialBooks } from "../data/books";
@@ -6,12 +7,19 @@ function ManageBooks() {
   const [books, setBooks] = useState(initialBooks);
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
+  const [editingBookId, setEditingBookId] = useState(null);
+
   const [formData, setFormData] = useState({
     title: "",
     author: "",
     subject: "",
     totalCopies: "",
   });
+
+  const isSuccess =
+    message === "Book added successfully!" ||
+    message === "Book updated successfully." ||
+    message === "Book deleted successfully.";
 
   const filteredBooks = books.filter((book) =>
     `${book.title} ${book.author}`
@@ -28,6 +36,17 @@ function ManageBooks() {
     }));
 
     setMessage("");
+  }
+
+  function resetForm() {
+    setFormData({
+      title: "",
+      author: "",
+      subject: "",
+      totalCopies: "",
+    });
+
+    setEditingBookId(null);
   }
 
   function handleSubmit(event) {
@@ -50,6 +69,7 @@ function ManageBooks() {
 
     const duplicateBook = books.some(
       (book) =>
+        book.id !== editingBookId &&
         book.title.toLowerCase() === title.toLowerCase() &&
         book.author.toLowerCase() === author.toLowerCase()
     );
@@ -59,25 +79,90 @@ function ManageBooks() {
       return;
     }
 
-    const newBook = {
-      id: Date.now(),
-      title,
-      author,
-      subject,
-      totalCopies,
-      borrowedCopies: 0,
-    };
+    if (editingBookId !== null) {
+      const editingBook = books.find(
+        (book) => book.id === editingBookId
+      );
 
-    setBooks((currentBooks) => [...currentBooks, newBook]);
+      if (!editingBook) {
+        setMessage("Book not found.");
+        return;
+      }
+
+      if (totalCopies < editingBook.borrowedCopies) {
+        setMessage("Total copies cannot be less than borrowed copies.");
+        return;
+      }
+
+      setBooks((currentBooks) =>
+        currentBooks.map((book) =>
+          book.id === editingBookId
+            ? {
+                ...book,
+                title,
+                author,
+                subject,
+                totalCopies,
+              }
+            : book
+        )
+      );
+
+      setMessage("Book updated successfully.");
+    } else {
+      const newBook = {
+        id: Date.now(),
+        title,
+        author,
+        subject,
+        totalCopies,
+        borrowedCopies: 0,
+      };
+
+      setBooks((currentBooks) => [...currentBooks, newBook]);
+      setMessage("Book added successfully!");
+    }
+
+    resetForm();
+  }
+
+  function handleEdit(book) {
+    setEditingBookId(book.id);
 
     setFormData({
-      title: "",
-      author: "",
-      subject: "",
-      totalCopies: "",
+      title: book.title,
+      author: book.author,
+      subject: book.subject,
+      totalCopies: String(book.totalCopies),
     });
 
-    setMessage("Book added successfully!");
+    setMessage("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function handleDelete(book) {
+    if (book.borrowedCopies > 0) {
+      setMessage("Cannot delete a book that has borrowed copies.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${book.title}"?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setBooks((currentBooks) =>
+      currentBooks.filter((item) => item.id !== book.id)
+    );
+
+    if (editingBookId === book.id) {
+      resetForm();
+    }
+
+    setMessage("Book deleted successfully.");
   }
 
   return (
@@ -119,7 +204,10 @@ function ManageBooks() {
             <div>
               <p className="text-sm text-[#777783]">Total Copies</p>
               <h2 className="mt-1 text-2xl font-bold text-[#252432]">
-                {books.reduce((total, book) => total + book.totalCopies, 0)}
+                {books.reduce(
+                  (total, book) => total + book.totalCopies,
+                  0
+                )}
               </h2>
             </div>
           </div>
@@ -134,8 +222,9 @@ function ManageBooks() {
 
               <div>
                 <h2 className="text-lg font-semibold text-[#252432]">
-                  Add a New Book
+                  {editingBookId !== null ? "Edit Book" : "Add a New Book"}
                 </h2>
+
                 <p className="mt-1 text-sm text-[#777783]">
                   Enter the book details below.
                 </p>
@@ -232,7 +321,7 @@ function ManageBooks() {
                 <p
                   role="status"
                   className={`rounded-xl px-4 py-3 text-sm ${
-                    message === "Book added successfully!"
+                    isSuccess
                       ? "bg-green-50 text-green-700"
                       : "bg-red-50 text-red-700"
                   }`}
@@ -246,8 +335,21 @@ function ManageBooks() {
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#4033C3] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#3328A0] focus:outline-none focus:ring-2 focus:ring-[#4033C3]/30 focus:ring-offset-2"
               >
                 <Plus size={18} />
-                Add Book
+                {editingBookId !== null ? "Save Changes" : "Add Book"}
               </button>
+
+              {editingBookId !== null && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetForm();
+                    setMessage("");
+                  }}
+                  className="w-full rounded-xl border border-[#DCDCE6] px-5 py-3 text-sm font-semibold text-[#777783] transition hover:bg-[#F8F8FC]"
+                >
+                  Cancel Editing
+                </button>
+              )}
             </form>
           </div>
 
@@ -257,6 +359,7 @@ function ManageBooks() {
                 <h2 className="text-lg font-semibold text-[#252432]">
                   Book Inventory
                 </h2>
+
                 <p className="mt-1 text-sm text-[#777783]">
                   {filteredBooks.length} books found
                 </p>
@@ -286,6 +389,7 @@ function ManageBooks() {
                     size={28}
                     className="mx-auto text-[#777783]"
                   />
+
                   <p className="mt-3 text-sm text-[#777783]">
                     No books found.
                   </p>
@@ -297,8 +401,8 @@ function ManageBooks() {
                     className="rounded-xl border border-[#E7E7ED] p-4 transition hover:border-[#4033C3]/40"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="font-semibold text-[#252432]">
+                      <div className="min-w-0">
+                        <h3 className="break-words font-semibold text-[#252432]">
                           {book.title}
                         </h3>
 
@@ -320,6 +424,24 @@ function ManageBooks() {
                           {book.totalCopies - book.borrowedCopies} available
                         </p>
                       </div>
+                    </div>
+
+                    <div className="mt-4 flex gap-3 border-t border-[#E7E7ED] pt-4">
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(book)}
+                        className="flex-1 rounded-lg border border-[#4033C3] px-3 py-2 text-sm font-medium text-[#4033C3] transition hover:bg-[#4033C3]/10"
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(book)}
+                        className="flex-1 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
                 ))
