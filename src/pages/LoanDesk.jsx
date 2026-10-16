@@ -1,8 +1,9 @@
+
 import { useState } from "react";
-import { initialBooks } from "../data/books";
+import { useBooks } from "../context/BooksContext";
 
 function LoanDesk() {
-  const [books, setBooks] = useState(initialBooks);
+  const { books, setBooks } = useBooks();
   const [selectedBooks, setSelectedBooks] = useState([]);
   const [borrowerName, setBorrowerName] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -23,11 +24,19 @@ function LoanDesk() {
   ).length;
 
   function addBook(book) {
+    const currentBook = books.find((item) => item.id === book.id);
+
+    if (!currentBook) {
+      setMessage("This book could not be found.");
+      return;
+    }
+
     const existingBook = selectedBooks.find(
       (item) => item.id === book.id
     );
 
-    const available = book.totalCopies - book.borrowedCopies;
+    const available =
+      currentBook.totalCopies - currentBook.borrowedCopies;
 
     if (available <= 0) {
       setMessage("This book is not available.");
@@ -35,32 +44,35 @@ function LoanDesk() {
     }
 
     if (existingBook) {
+      if (existingBook.quantity >= available) {
+        setMessage("No more copies of this book are available.");
+        return;
+      }
+
       increaseQuantity(book.id);
       return;
     }
 
     setSelectedBooks((currentBooks) => [
       ...currentBooks,
-      { ...book, quantity: 1 },
+      { ...currentBook, quantity: 1 },
     ]);
 
     setMessage("");
   }
 
   function increaseQuantity(bookId) {
+    const currentBook = books.find((item) => item.id === bookId);
+
+    if (!currentBook) return;
+
+    const available =
+      currentBook.totalCopies - currentBook.borrowedCopies;
+
     setSelectedBooks((currentBooks) =>
       currentBooks.map((book) => {
-        if (book.id === bookId) {
-          const currentBook = books.find(
-            (item) => item.id === bookId
-          );
-
-          const available =
-            currentBook.totalCopies - currentBook.borrowedCopies;
-
-          if (book.quantity < available) {
-            return { ...book, quantity: book.quantity + 1 };
-          }
+        if (book.id === bookId && book.quantity < available) {
+          return { ...book, quantity: book.quantity + 1 };
         }
 
         return book;
@@ -85,14 +97,15 @@ function LoanDesk() {
   }
 
   function confirmLoan() {
-    if (
-      !borrowerName.trim() ||
-      !dueDate ||
-      selectedBooks.length === 0
-    ) {
+    if (!borrowerName.trim() || !dueDate || selectedBooks.length === 0) {
       setMessage(
         "Please enter the borrower name, due date, and select a book."
       );
+      return;
+    }
+
+    if (dueDate < new Date().toLocaleDateString("en-CA")) {
+      setMessage("The due date cannot be in the past.");
       return;
     }
 
@@ -133,23 +146,16 @@ function LoanDesk() {
           (item) => item.id === book.id
         );
 
-        if (selectedBook) {
-          return {
-            ...book,
-            borrowedCopies:
-              book.borrowedCopies + selectedBook.quantity,
-          };
-        }
+        if (!selectedBook) return book;
 
-        return book;
+        return {
+          ...book,
+          borrowedCopies: book.borrowedCopies + selectedBook.quantity,
+        };
       })
     );
 
-    setActiveLoans((currentLoans) => [
-      ...currentLoans,
-      newLoan,
-    ]);
-
+    setActiveLoans((currentLoans) => [...currentLoans, newLoan]);
     setSelectedBooks([]);
     setBorrowerName("");
     setDueDate("");
@@ -157,13 +163,9 @@ function LoanDesk() {
   }
 
   function returnLoan(loanId) {
-    const loan = activeLoans.find(
-      (item) => item.id === loanId
-    );
+    const loan = activeLoans.find((item) => item.id === loanId);
 
-    if (!loan || loan.returned) {
-      return;
-    }
+    if (!loan || loan.returned) return;
 
     setBooks((currentBooks) =>
       currentBooks.map((book) => {
@@ -171,25 +173,21 @@ function LoanDesk() {
           (item) => item.id === book.id
         );
 
-        if (returnedBook) {
-          return {
-            ...book,
-            borrowedCopies: Math.max(
-              0,
-              book.borrowedCopies - returnedBook.quantity
-            ),
-          };
-        }
+        if (!returnedBook) return book;
 
-        return book;
+        return {
+          ...book,
+          borrowedCopies: Math.max(
+            0,
+            book.borrowedCopies - returnedBook.quantity
+          ),
+        };
       })
     );
 
     setActiveLoans((currentLoans) =>
       currentLoans.map((item) =>
-        item.id === loanId
-          ? { ...item, returned: true }
-          : item
+        item.id === loanId ? { ...item, returned: true } : item
       )
     );
 
@@ -249,7 +247,6 @@ function LoanDesk() {
           <h2 className="text-lg font-semibold text-[#252432]">
             Select a Book
           </h2>
-
           <p className="mt-2 text-sm text-[#777783]">
             Choose a book from the available library collection.
           </p>
@@ -326,9 +323,10 @@ function LoanDesk() {
                   (item) => item.id === book.id
                 );
 
+                if (!currentBook) return null;
+
                 const available =
-                  currentBook.totalCopies -
-                  currentBook.borrowedCopies;
+                  currentBook.totalCopies - currentBook.borrowedCopies;
 
                 return (
                   <div
