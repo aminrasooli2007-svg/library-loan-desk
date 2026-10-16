@@ -1,16 +1,24 @@
 
-import { initialBooks } from "../data/books";
+import { useBooks } from "../context/BooksContext";
 
 function Home() {
-  const totalBooks = initialBooks.length;
+  const { books } = useBooks();
 
-  const borrowedCopies = initialBooks.reduce(
+  const totalBooks = books.length;
+
+  const totalCopies = books.reduce(
+    (total, book) => total + book.totalCopies,
+    0
+  );
+
+  const borrowedCopies = books.reduce(
     (total, book) => total + book.borrowedCopies,
     0
   );
 
-  const availableCopies = initialBooks.reduce(
-    (total, book) => total + book.totalCopies - book.borrowedCopies,
+  const availableCopies = books.reduce(
+    (total, book) =>
+      total + book.totalCopies - book.borrowedCopies,
     0
   );
 
@@ -43,7 +51,7 @@ function Home() {
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
             <div className="rounded-2xl border border-[#DCDCE6] bg-white p-6 shadow-sm">
               <p className="mb-4 text-sm font-medium text-[#777783]">
-                Total Books
+                Total Titles
               </p>
               <p className="text-3xl font-bold tracking-tight text-[#4033C3]">
                 {totalBooks}
@@ -67,6 +75,15 @@ function Home() {
                 {availableCopies}
               </p>
             </div>
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-[#DCDCE6] bg-white p-6 shadow-sm">
+            <p className="text-sm font-medium text-[#777783]">
+              Total Physical Copies
+            </p>
+            <p className="mt-3 text-2xl font-bold text-[#4033C3]">
+              {totalCopies}
+            </p>
           </div>
         </section>
       </main>
