@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { initialBooks } from "../data/books";
 
@@ -15,11 +14,36 @@ function LoanDesk() {
     0
   );
 
+  const activeLoansCount = activeLoans.filter(
+    (loan) => !loan.returned
+  ).length;
+
+  const returnedLoansCount = activeLoans.filter(
+    (loan) => loan.returned
+  ).length;
+
   function addBook(book) {
+    const existingBook = selectedBooks.find(
+      (item) => item.id === book.id
+    );
+
+    const available = book.totalCopies - book.borrowedCopies;
+
+    if (available <= 0) {
+      setMessage("This book is not available.");
+      return;
+    }
+
+    if (existingBook) {
+      increaseQuantity(book.id);
+      return;
+    }
+
     setSelectedBooks((currentBooks) => [
       ...currentBooks,
       { ...book, quantity: 1 },
     ]);
+
     setMessage("");
   }
 
@@ -27,8 +51,12 @@ function LoanDesk() {
     setSelectedBooks((currentBooks) =>
       currentBooks.map((book) => {
         if (book.id === bookId) {
-          const currentBook = books.find((item) => item.id === bookId);
-          const available = currentBook.totalCopies - currentBook.borrowedCopies;
+          const currentBook = books.find(
+            (item) => item.id === bookId
+          );
+
+          const available =
+            currentBook.totalCopies - currentBook.borrowedCopies;
 
           if (book.quantity < available) {
             return { ...book, quantity: book.quantity + 1 };
@@ -38,6 +66,8 @@ function LoanDesk() {
         return book;
       })
     );
+
+    setMessage("");
   }
 
   function decreaseQuantity(bookId) {
@@ -50,16 +80,27 @@ function LoanDesk() {
         )
         .filter((book) => book.quantity > 0)
     );
+
+    setMessage("");
   }
 
   function confirmLoan() {
-    if (!borrowerName.trim() || !dueDate || selectedBooks.length === 0) {
-      setMessage("Please enter the borrower name, due date, and select a book.");
+    if (
+      !borrowerName.trim() ||
+      !dueDate ||
+      selectedBooks.length === 0
+    ) {
+      setMessage(
+        "Please enter the borrower name, due date, and select a book."
+      );
       return;
     }
 
     const unavailableBook = selectedBooks.some((selectedBook) => {
-      const currentBook = books.find((book) => book.id === selectedBook.id);
+      const currentBook = books.find(
+        (book) => book.id === selectedBook.id
+      );
+
       return (
         !currentBook ||
         selectedBook.quantity >
@@ -68,7 +109,9 @@ function LoanDesk() {
     });
 
     if (unavailableBook) {
-      setMessage("Not enough copies are available for one or more books.");
+      setMessage(
+        "Not enough copies are available for one or more books."
+      );
       return;
     }
 
@@ -93,7 +136,8 @@ function LoanDesk() {
         if (selectedBook) {
           return {
             ...book,
-            borrowedCopies: book.borrowedCopies + selectedBook.quantity,
+            borrowedCopies:
+              book.borrowedCopies + selectedBook.quantity,
           };
         }
 
@@ -101,11 +145,55 @@ function LoanDesk() {
       })
     );
 
-    setActiveLoans((currentLoans) => [...currentLoans, newLoan]);
+    setActiveLoans((currentLoans) => [
+      ...currentLoans,
+      newLoan,
+    ]);
+
     setSelectedBooks([]);
     setBorrowerName("");
     setDueDate("");
     setMessage("Loan confirmed successfully!");
+  }
+
+  function returnLoan(loanId) {
+    const loan = activeLoans.find(
+      (item) => item.id === loanId
+    );
+
+    if (!loan || loan.returned) {
+      return;
+    }
+
+    setBooks((currentBooks) =>
+      currentBooks.map((book) => {
+        const returnedBook = loan.books.find(
+          (item) => item.id === book.id
+        );
+
+        if (returnedBook) {
+          return {
+            ...book,
+            borrowedCopies: Math.max(
+              0,
+              book.borrowedCopies - returnedBook.quantity
+            ),
+          };
+        }
+
+        return book;
+      })
+    );
+
+    setActiveLoans((currentLoans) =>
+      currentLoans.map((item) =>
+        item.id === loanId
+          ? { ...item, returned: true }
+          : item
+      )
+    );
+
+    setMessage("Books returned successfully!");
   }
 
   return (
@@ -138,7 +226,7 @@ function LoanDesk() {
         <div className="rounded-2xl border border-[#DCDCE6] bg-white p-6 shadow-sm">
           <p className="text-sm text-[#777783]">Active Loans</p>
           <h2 className="mt-3 text-3xl font-bold text-[#4033C3]">
-            {activeLoans.length}
+            {activeLoansCount}
           </h2>
           <p className="mt-2 text-sm text-[#777783]">
             Current sample loans
@@ -147,7 +235,9 @@ function LoanDesk() {
 
         <div className="rounded-2xl border border-[#DCDCE6] bg-white p-6 shadow-sm">
           <p className="text-sm text-[#777783]">Returned Loans</p>
-          <h2 className="mt-3 text-3xl font-bold text-[#4033C3]">0</h2>
+          <h2 className="mt-3 text-3xl font-bold text-[#4033C3]">
+            {returnedLoansCount}
+          </h2>
           <p className="mt-2 text-sm text-[#777783]">
             Completed returns
           </p>
@@ -167,7 +257,9 @@ function LoanDesk() {
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {books.map((book) => {
-            const available = book.totalCopies - book.borrowedCopies;
+            const available =
+              book.totalCopies - book.borrowedCopies;
+
             const isSelected = selectedBooks.some(
               (item) => item.id === book.id
             );
@@ -207,11 +299,11 @@ function LoanDesk() {
 
                 <button
                   type="button"
-                  disabled={available === 0 || isSelected}
+                  disabled={available === 0}
                   onClick={() => addBook(book)}
                   className="mt-4 w-full rounded-xl bg-[#4033C3] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#3328A0] disabled:cursor-not-allowed disabled:bg-[#E7E7ED] disabled:text-[#777783]"
                 >
-                  {isSelected ? "Added to Loan" : "Add to Loan"}
+                  {isSelected ? "Add Another Copy" : "Add to Loan"}
                 </button>
               </div>
             );
@@ -229,49 +321,59 @@ function LoanDesk() {
             </p>
           ) : (
             <div className="mt-4 space-y-3">
-              {selectedBooks.map((book) => (
-                <div
-                  key={book.id}
-                  className="flex flex-col gap-4 rounded-xl border border-[#E7E7ED] p-4 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div>
-                    <p className="font-medium text-[#252432]">{book.title}</p>
-                    <p className="mt-1 text-sm text-[#777783]">{book.author}</p>
-                    <p className="mt-2 text-sm text-[#777783]">
-                      Quantity: {book.quantity}
-                    </p>
+              {selectedBooks.map((book) => {
+                const currentBook = books.find(
+                  (item) => item.id === book.id
+                );
+
+                const available =
+                  currentBook.totalCopies -
+                  currentBook.borrowedCopies;
+
+                return (
+                  <div
+                    key={book.id}
+                    className="flex flex-col gap-4 rounded-xl border border-[#E7E7ED] p-4 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div>
+                      <p className="font-medium text-[#252432]">
+                        {book.title}
+                      </p>
+                      <p className="mt-1 text-sm text-[#777783]">
+                        {book.author}
+                      </p>
+                      <p className="mt-2 text-sm text-[#777783]">
+                        Quantity: {book.quantity}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => decreaseQuantity(book.id)}
+                        className="h-10 w-10 rounded-lg border border-[#DCDCE6] font-semibold text-[#4033C3] hover:bg-[#4033C3]/10"
+                        aria-label={`Decrease quantity of ${book.title}`}
+                      >
+                        −
+                      </button>
+
+                      <span className="min-w-6 text-center font-semibold">
+                        {book.quantity}
+                      </span>
+
+                      <button
+                        type="button"
+                        disabled={book.quantity >= available}
+                        onClick={() => increaseQuantity(book.id)}
+                        className="h-10 w-10 rounded-lg border border-[#DCDCE6] font-semibold text-[#4033C3] hover:bg-[#4033C3]/10 disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label={`Increase quantity of ${book.title}`}
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
-
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => decreaseQuantity(book.id)}
-                      className="h-10 w-10 rounded-lg border border-[#DCDCE6] font-semibold text-[#4033C3] hover:bg-[#4033C3]/10"
-                      aria-label={`Decrease quantity of ${book.title}`}
-                    >
-                      −
-                    </button>
-
-                    <span className="min-w-6 text-center font-semibold">
-                      {book.quantity}
-                    </span>
-
-                    <button
-                      type="button"
-                      disabled={
-                        book.quantity >=
-                        books.find((item) => item.id === book.id).totalCopies -
-                          books.find((item) => item.id === book.id).borrowedCopies
-                      }
-                      onClick={() => increaseQuantity(book.id)}
-                      className="h-10 w-10 rounded-lg border border-[#DCDCE6] font-semibold text-[#4033C3] hover:bg-[#4033C3]/10 disabled:cursor-not-allowed disabled:opacity-40"
-                      aria-label={`Increase quantity of ${book.title}`}
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -346,38 +448,66 @@ function LoanDesk() {
           </button>
         </div>
 
-        {activeLoans.length > 0 && (
-          <div className="mt-8 border-t border-[#E7E7ED] pt-6">
-            <h2 className="text-lg font-semibold text-[#252432]">
-              Recent Loans
-            </h2>
+        <div className="mt-8 border-t border-[#E7E7ED] pt-6">
+          <h2 className="text-lg font-semibold text-[#252432]">
+            Recent Loans
+          </h2>
 
+          {activeLoans.length === 0 ? (
+            <p className="mt-3 text-sm text-[#777783]">
+              No loans have been recorded yet.
+            </p>
+          ) : (
             <div className="mt-4 space-y-3">
               {activeLoans.map((loan) => (
                 <div
                   key={loan.id}
                   className="rounded-xl border border-[#E7E7ED] p-4"
                 >
-                  <p className="font-semibold text-[#252432]">
-                    {loan.borrowerName}
-                  </p>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="font-semibold text-[#252432]">
+                        {loan.borrowerName}
+                      </p>
 
-                  <p className="mt-1 text-sm text-[#777783]">
-                    Due date: {loan.dueDate}
-                  </p>
+                      <p className="mt-1 text-sm text-[#777783]">
+                        Due date: {loan.dueDate}
+                      </p>
+                    </div>
 
-                  <ul className="mt-2 list-inside list-disc text-sm text-[#777783]">
+                    <span
+                      className={`w-fit rounded-full px-3 py-1 text-xs font-medium ${
+                        loan.returned
+                          ? "bg-green-100 text-green-700"
+                          : "bg-[#4033C3]/10 text-[#4033C3]"
+                      }`}
+                    >
+                      {loan.returned ? "Returned" : "Active"}
+                    </span>
+                  </div>
+
+                  <ul className="mt-3 list-inside list-disc text-sm text-[#777783]">
                     {loan.books.map((book) => (
                       <li key={book.id}>
                         {book.title} × {book.quantity}
                       </li>
                     ))}
                   </ul>
+
+                  {!loan.returned && (
+                    <button
+                      type="button"
+                      onClick={() => returnLoan(loan.id)}
+                      className="mt-4 rounded-xl bg-[#4033C3] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#3328A0]"
+                    >
+                      Return Books
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </section>
     </main>
   );
