@@ -6,6 +6,7 @@ import LoanDesk from "./pages/LoanDesk";
 import ManageBooks from "./pages/ManageBooks";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import { BooksProvider } from "./context/BooksContext";
 
 const navLinkClass = ({ isActive }) =>
   `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
@@ -16,6 +17,7 @@ const navLinkClass = ({ isActive }) =>
 
 function App() {
   return (
+    <BooksProvider>
     <BrowserRouter>
       <div className="min-h-screen bg-[#E7E7ED] text-[#252432]">
         <header className="border-b border-[#D5D5E0] bg-white">
@@ -60,6 +62,7 @@ function App() {
         </Routes>
       </div>
     </BrowserRouter>
+    </BooksProvider>
   );
 }
 

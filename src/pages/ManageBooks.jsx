@@ -1,10 +1,11 @@
 
 import { useState } from "react";
+import { useBooks } from "../context/BooksContext";
 import { BookPlus, BookOpen, Plus, Search } from "lucide-react";
-import { initialBooks } from "../data/books";
+
 
 function ManageBooks() {
-  const [books, setBooks] = useState(initialBooks);
+  const { books, setBooks } = useBooks();
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
   const [editingBookId, setEditingBookId] = useState(null);
