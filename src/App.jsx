@@ -1,5 +1,14 @@
 
 import { BrowserRouter, Routes, Route, NavLink } from "react-router";
+import {
+  BookOpen,
+  House,
+  LibraryBig,
+  ArrowLeftRight,
+  BookPlus,
+  Info,
+  Mail,
+} from "lucide-react";
 import Home from "./pages/Home";
 import Books from "./pages/Books";
 import LoanDesk from "./pages/LoanDesk";
@@ -8,60 +17,86 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import { BooksProvider } from "./context/BooksContext";
 
-const navLinkClass = ({ isActive }) =>
-  `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-    isActive
-      ? "bg-[#4033C3]/10 text-[#4033C3]"
-      : "text-[#777783] hover:bg-[#E7E7ED] hover:text-[#4033C3]"
-  }`;
+const navItems = [
+  { to: "/", label: "Home", icon: House, end: true },
+  { to: "/books", label: "Books", icon: LibraryBig },
+  { to: "/loans", label: "Loan Desk", icon: ArrowLeftRight },
+  { to: "/manage-books", label: "Manage Books", icon: BookPlus },
+  { to: "/about", label: "About", icon: Info },
+  { to: "/contact", label: "Contact", icon: Mail },
+];
 
 function App() {
   return (
     <BooksProvider>
-    <BrowserRouter>
-      <div className="min-h-screen bg-[#E7E7ED] text-[#252432]">
-        <header className="border-b border-[#D5D5E0] bg-white">
-          <nav className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-5 px-6 py-5">
-            <NavLink
-              to="/"
-              className="text-xl font-bold tracking-tight text-[#4033C3] sm:text-2xl"
+      <BrowserRouter>
+        <div className="min-h-screen bg-[#F8F7F4] text-[#252432]">
+          <header className="sticky top-0 z-50 border-b border-[#E7E7ED] bg-white/95 backdrop-blur-md">
+            <nav
+              aria-label="Main navigation"
+              className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-4 sm:px-8 lg:flex-row lg:items-center lg:justify-between"
             >
-              Library Loan Desk
-            </NavLink>
+              <NavLink
+                to="/"
+                className="group flex w-fit items-center gap-3"
+              >
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#4033C3] text-white shadow-sm transition group-hover:-rotate-3 group-hover:scale-105">
+                  <BookOpen size={24} strokeWidth={1.8} />
+                </span>
 
-            <div className="flex flex-wrap items-center gap-1">
-              <NavLink to="/" end className={navLinkClass}>
-                Home
+                <span>
+                  <span className="block text-lg font-bold tracking-tight text-[#252432]">
+                    Library
+                    <span className="text-[#4033C3]">Desk</span>
+                  </span>
+                  <span className="mt-0.5 block text-xs tracking-wide text-[#777783]">
+                    Your personal library space
+                  </span>
+                </span>
               </NavLink>
-              <NavLink to="/books" className={navLinkClass}>
-                Books
-              </NavLink>
-              <NavLink to="/loans" className={navLinkClass}>
-                Loan Desk
-              </NavLink>
-              <NavLink to="/manage-books" className={navLinkClass}>
-                Manage Books
-              </NavLink>
-              <NavLink to="/about" className={navLinkClass}>
-                About
-              </NavLink>
-              <NavLink to="/contact" className={navLinkClass}>
-                Contact
-              </NavLink>
+
+              <div className="flex gap-1 overflow-x-auto pb-1 lg:pb-0">
+                {navItems.map(({ to, label, icon: Icon, end }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    end={end}
+                    className={({ isActive }) =>
+                      `flex shrink-0 items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                        isActive
+                          ? "bg-[#4033C3] text-white shadow-sm"
+                          : "text-[#777783] hover:bg-[#E7E7ED] hover:text-[#4033C3]"
+                      }`
+                    }
+                  >
+                    <Icon size={16} strokeWidth={1.9} />
+                    <span>{label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            </nav>
+          </header>
+
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/books" element={<Books />} />
+            <Route path="/loans" element={<LoanDesk />} />
+            <Route path="/manage-books" element={<ManageBooks />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+          </Routes>
+
+          <footer className="border-t border-[#E7E7ED] bg-white">
+            <div className="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-6 text-sm text-[#777783] sm:flex-row sm:items-center sm:justify-between sm:px-8">
+              <p className="font-medium text-[#252432]">
+                <span className="text-[#4033C3]">LibraryDesk</span> — Every
+                book has a story.
+              </p>
+              <p>Library Loan Desk · Student Project</p>
             </div>
-          </nav>
-        </header>
-
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/books" element={<Books />} />
-          <Route path="/loans" element={<LoanDesk />} />
-          <Route path="/manage-books" element={<ManageBooks />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-        </Routes>
-      </div>
-    </BrowserRouter>
+          </footer>
+        </div>
+      </BrowserRouter>
     </BooksProvider>
   );
 }
