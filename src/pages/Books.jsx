@@ -1,25 +1,36 @@
 
 import { useState } from "react";
-import { initialBooks } from "../data/books";
+import { useBooks } from "../context/BooksContext";
 import BookCard from "../components/BookCard";
 
 function Books() {
+  const { books } = useBooks();
+
   const [search, setSearch] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("All");
   const [sortOrder, setSortOrder] = useState("default");
   const [showBorrowableOnly, setShowBorrowableOnly] = useState(false);
-  console.log("Filter is on:", showBorrowableOnly);
 
-  const filteredBooks = initialBooks.filter((book) => {
+  const subjects = [
+    "All",
+    ...new Set(books.map((book) => book.subject)),
+  ];
+
+  const filteredBooks = books.filter((book) => {
     const query = search.toLowerCase();
     const titleMatches = book.title.toLowerCase().includes(query);
+    const authorMatches = book.author.toLowerCase().includes(query);
     const subjectMatches =
       selectedSubject === "All" || book.subject === selectedSubject;
     const availableCopies = book.totalCopies - book.borrowedCopies;
     const availabilityMatches =
       !showBorrowableOnly || availableCopies > 0;
 
-    return titleMatches && subjectMatches && availabilityMatches;
+    return (
+      (titleMatches || authorMatches) &&
+      subjectMatches &&
+      availabilityMatches
+    );
   });
 
   const sortedBooks = [...filteredBooks].sort((a, b) => {
@@ -69,7 +80,7 @@ function Books() {
               type="text"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by title..."
+              placeholder="Search by title or author..."
               className="w-full rounded-xl border border-[#D5D5E0] bg-white px-4 py-3 text-sm text-[#252432] outline-none transition focus:border-[#4033C3] focus:ring-2 focus:ring-[#4033C3]/10"
             />
           </div>
@@ -89,9 +100,14 @@ function Books() {
               className="w-full rounded-xl border border-[#D5D5E0] bg-white px-4 py-3 text-sm text-[#252432] outline-none transition focus:border-[#4033C3] focus:ring-2 focus:ring-[#4033C3]/10"
             >
               <option value="All">All Subjects</option>
-              <option value="Technology">Technology</option>
-              <option value="Literature">Literature</option>
-              <option value="Languages">Languages</option>
+
+              {subjects
+                .filter((subject) => subject !== "All")
+                .map((subject) => (
+                  <option key={subject} value={subject}>
+                    {subject}
+                  </option>
+                ))}
             </select>
           </div>
 
@@ -129,7 +145,7 @@ function Books() {
         </label>
 
         <p className="mt-3 text-sm text-[#777783]">
-          Showing {sortedBooks.length} of {initialBooks.length} books
+          Showing {sortedBooks.length} of {books.length} books
         </p>
       </section>
 
