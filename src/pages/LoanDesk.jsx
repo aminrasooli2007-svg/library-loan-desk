@@ -1,5 +1,17 @@
 
 import { useState } from "react";
+import {
+  BookOpen,
+  BookCheck,
+  RotateCcw,
+  Plus,
+  Minus,
+  CalendarDays,
+  UserRound,
+  CheckCircle2,
+  CircleAlert,
+  ArrowRight,
+} from "lucide-react";
 import { useBooks } from "../context/BooksContext";
 
 function LoanDesk() {
@@ -22,6 +34,18 @@ function LoanDesk() {
   const returnedLoansCount = activeLoans.filter(
     (loan) => loan.returned
   ).length;
+
+  const selectedCopiesCount = selectedBooks.reduce(
+    (total, book) => total + book.quantity,
+    0
+  );
+
+  const today = new Date();
+  const todayString = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, "0"),
+    String(today.getDate()).padStart(2, "0"),
+  ].join("-");
 
   function addBook(book) {
     const currentBook = books.find((item) => item.id === book.id);
@@ -104,7 +128,7 @@ function LoanDesk() {
       return;
     }
 
-    if (dueDate < new Date().toLocaleDateString("en-CA")) {
+    if (dueDate < todayString) {
       setMessage("The due date cannot be in the past.");
       return;
     }
@@ -194,319 +218,374 @@ function LoanDesk() {
     setMessage("Books returned successfully!");
   }
 
+  const stats = [
+    {
+      label: "Available Copies",
+      value: availableCopies,
+      note: "Ready to be borrowed",
+      icon: BookOpen,
+    },
+    {
+      label: "Active Loans",
+      value: activeLoansCount,
+      note: "Currently on loan",
+      icon: BookCheck,
+    },
+    {
+      label: "Returned Loans",
+      value: returnedLoansCount,
+      note: "Completed returns",
+      icon: RotateCcw,
+    },
+  ];
+
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-6 py-12">
-      <section className="mb-8">
-        <p className="mb-2 text-sm font-medium text-[#E66B3B]">
-          Library Services
-        </p>
+    <main className="min-h-screen bg-[#F8F7F4]">
+      <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-12">
+        <section className="relative mb-8 overflow-hidden rounded-[2rem] bg-[#252432] px-6 py-9 text-white sm:px-10 sm:py-12">
+          <div className="pointer-events-none absolute -right-12 -top-16 h-56 w-56 rounded-full bg-[#4033C3]/40 blur-3xl" />
 
-        <h1 className="text-3xl font-bold tracking-tight text-[#252432]">
-          Loan Desk
-        </h1>
+          <div className="relative flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+            <div>
+              <p className="mb-3 text-sm font-medium text-[#F0A17F]">
+                LIBRARY SERVICES
+              </p>
+              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                Loan Desk
+              </h1>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-white/65 sm:text-base">
+                Manage book borrowing and returns in one organized workspace.
+              </p>
+            </div>
 
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-[#777783]">
-          Manage book loans, select copies, and keep track of borrowing activity.
-        </p>
-      </section>
-
-      <section className="grid grid-cols-1 gap-5 md:grid-cols-3">
-        <div className="rounded-2xl border border-[#DCDCE6] bg-white p-6 shadow-sm">
-          <p className="text-sm text-[#777783]">Available Books</p>
-          <h2 className="mt-3 text-3xl font-bold text-[#4033C3]">
-            {availableCopies}
-          </h2>
-          <p className="mt-2 text-sm text-[#777783]">
-            Copies ready to borrow
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-[#DCDCE6] bg-white p-6 shadow-sm">
-          <p className="text-sm text-[#777783]">Active Loans</p>
-          <h2 className="mt-3 text-3xl font-bold text-[#4033C3]">
-            {activeLoansCount}
-          </h2>
-          <p className="mt-2 text-sm text-[#777783]">
-            Current sample loans
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-[#DCDCE6] bg-white p-6 shadow-sm">
-          <p className="text-sm text-[#777783]">Returned Loans</p>
-          <h2 className="mt-3 text-3xl font-bold text-[#4033C3]">
-            {returnedLoansCount}
-          </h2>
-          <p className="mt-2 text-sm text-[#777783]">
-            Completed returns
-          </p>
-        </div>
-      </section>
-
-      <section className="mt-8 rounded-2xl border border-[#DCDCE6] bg-white p-6 shadow-sm">
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold text-[#252432]">
-            Select a Book
-          </h2>
-          <p className="mt-2 text-sm text-[#777783]">
-            Choose a book from the available library collection.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {books.map((book) => {
-            const available =
-              book.totalCopies - book.borrowedCopies;
-
-            const isSelected = selectedBooks.some(
-              (item) => item.id === book.id
-            );
-
-            return (
-              <div
-                key={book.id}
-                className="rounded-xl border border-[#E7E7ED] p-5 transition hover:border-[#4033C3]"
-              >
-                <p className="text-xs font-medium text-[#E66B3B]">
-                  {book.subject}
-                </p>
-
-                <h3 className="mt-2 font-semibold text-[#252432]">
-                  {book.title}
-                </h3>
-
-                <p className="mt-1 text-sm text-[#777783]">
-                  By {book.author}
-                </p>
-
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <p className="text-sm text-[#777783]">
-                    Available: {available}
-                  </p>
-
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-medium ${
-                      available > 0
-                        ? "bg-[#4033C3]/10 text-[#4033C3]"
-                        : "bg-[#E7E7ED] text-[#777783]"
-                    }`}
-                  >
-                    {available > 0 ? "Available" : "Unavailable"}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  disabled={available === 0}
-                  onClick={() => addBook(book)}
-                  className="mt-4 w-full rounded-xl bg-[#4033C3] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#3328A0] disabled:cursor-not-allowed disabled:bg-[#E7E7ED] disabled:text-[#777783]"
-                >
-                  {isSelected ? "Add Another Copy" : "Add to Loan"}
-                </button>
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-5 py-4">
+              <BookOpen size={25} className="text-[#B9B1FF]" />
+              <div>
+                <p className="text-2xl font-bold">{selectedCopiesCount}</p>
+                <p className="text-xs text-white/60">Copies in your basket</p>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          </div>
+        </section>
 
-        <div className="mt-8 border-t border-[#E7E7ED] pt-6">
-          <h2 className="text-lg font-semibold text-[#252432]">
-            Selected Books ({selectedBooks.length})
-          </h2>
+        <section className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {stats.map(({ label, value, note, icon: Icon }) => (
+            <article
+              key={label}
+              className="rounded-2xl border border-[#E7E7ED] bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md sm:p-6"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-[#777783]">
+                    {label}
+                  </p>
+                  <p className="mt-3 text-3xl font-bold text-[#252432]">
+                    {value}
+                  </p>
+                </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#4033C3]/10 text-[#4033C3]">
+                  <Icon size={23} />
+                </div>
+              </div>
+              <p className="mt-4 border-t border-[#E7E7ED] pt-4 text-sm text-[#777783]">
+                {note}
+              </p>
+            </article>
+          ))}
+        </section>
 
-          {selectedBooks.length === 0 ? (
-            <p className="mt-3 text-sm text-[#777783]">
-              No books selected yet.
-            </p>
-          ) : (
-            <div className="mt-4 space-y-3">
-              {selectedBooks.map((book) => {
-                const currentBook = books.find(
+        <div className="grid items-start gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+          <section className="rounded-2xl border border-[#E7E7ED] bg-white p-5 shadow-sm sm:p-6">
+            <div className="mb-6">
+              <p className="text-sm font-medium text-[#4033C3]">
+                STEP 1
+              </p>
+              <h2 className="mt-1 text-xl font-bold text-[#252432]">
+                Choose your books
+              </h2>
+              <p className="mt-2 text-sm text-[#777783]">
+                Select available books to add them to the loan basket.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {books.map((book, index) => {
+                const available =
+                  book.totalCopies - book.borrowedCopies;
+                const isSelected = selectedBooks.some(
                   (item) => item.id === book.id
                 );
 
-                if (!currentBook) return null;
-
-                const available =
-                  currentBook.totalCopies - currentBook.borrowedCopies;
+                const coverColors = [
+                  "from-[#4033C3] to-[#7770D8]",
+                  "from-[#385B50] to-[#789487]",
+                  "from-[#A45135] to-[#E6A17F]",
+                  "from-[#343B54] to-[#7584A5]",
+                ];
 
                 return (
-                  <div
+                  <article
                     key={book.id}
-                    className="flex flex-col gap-4 rounded-xl border border-[#E7E7ED] p-4 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex gap-4 rounded-xl border border-[#E7E7ED] p-4 transition hover:border-[#C9C3F5]"
                   >
-                    <div>
-                      <p className="font-medium text-[#252432]">
-                        {book.title}
-                      </p>
-                      <p className="mt-1 text-sm text-[#777783]">
-                        {book.author}
-                      </p>
-                      <p className="mt-2 text-sm text-[#777783]">
-                        Quantity: {book.quantity}
-                      </p>
+                    <div
+                      className={`flex h-24 w-16 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${coverColors[index % coverColors.length]} p-2 text-center text-white shadow-sm`}
+                    >
+                      <BookOpen size={24} strokeWidth={1.5} />
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => decreaseQuantity(book.id)}
-                        className="h-10 w-10 rounded-lg border border-[#DCDCE6] font-semibold text-[#4033C3] hover:bg-[#4033C3]/10"
-                        aria-label={`Decrease quantity of ${book.title}`}
-                      >
-                        −
-                      </button>
-
-                      <span className="min-w-6 text-center font-semibold">
-                        {book.quantity}
-                      </span>
+                    <div className="flex min-w-0 flex-1 flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-[#4033C3]">
+                          {book.subject}
+                        </p>
+                        <h3 className="mt-1 font-semibold text-[#252432]">
+                          {book.title}
+                        </h3>
+                        <p className="mt-1 text-sm text-[#777783]">
+                          By {book.author}
+                        </p>
+                        <p className="mt-2 text-xs text-[#777783]">
+                          {available} {available === 1 ? "copy" : "copies"} available
+                        </p>
+                      </div>
 
                       <button
                         type="button"
-                        disabled={book.quantity >= available}
-                        onClick={() => increaseQuantity(book.id)}
-                        className="h-10 w-10 rounded-lg border border-[#DCDCE6] font-semibold text-[#4033C3] hover:bg-[#4033C3]/10 disabled:cursor-not-allowed disabled:opacity-40"
-                        aria-label={`Increase quantity of ${book.title}`}
+                        disabled={available === 0}
+                        onClick={() => addBook(book)}
+                        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#4033C3] px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-[#5144D8] disabled:cursor-not-allowed disabled:bg-[#E7E7ED] disabled:text-[#777783]"
                       >
-                        +
+                        <Plus size={16} />
+                        {isSelected ? "Add copy" : "Add to basket"}
                       </button>
                     </div>
-                  </div>
+                  </article>
                 );
               })}
             </div>
-          )}
-        </div>
+          </section>
 
-        <div className="mt-8 border-t border-[#E7E7ED] pt-6">
-          <h2 className="text-lg font-semibold text-[#252432]">
-            Borrower Information
-          </h2>
-
-          <p className="mt-2 text-sm text-[#777783]">
-            Enter the borrower's information before confirming the loan.
-          </p>
-
-          <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
-            <div>
-              <label
-                htmlFor="borrowerName"
-                className="mb-2 block text-sm font-medium text-[#252432]"
-              >
-                Borrower Name
-              </label>
-
-              <input
-                id="borrowerName"
-                type="text"
-                value={borrowerName}
-                onChange={(event) => setBorrowerName(event.target.value)}
-                placeholder="Enter borrower name"
-                className="w-full rounded-xl border border-[#DCDCE6] px-4 py-3 text-sm outline-none focus:border-[#4033C3] focus:ring-2 focus:ring-[#4033C3]/10"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="dueDate"
-                className="mb-2 block text-sm font-medium text-[#252432]"
-              >
-                Due Date
-              </label>
-
-              <input
-                id="dueDate"
-                type="date"
-                min={new Date().toLocaleDateString("en-CA")}
-                value={dueDate}
-                onChange={(event) => setDueDate(event.target.value)}
-                className="w-full rounded-xl border border-[#DCDCE6] px-4 py-3 text-sm outline-none focus:border-[#4033C3] focus:ring-2 focus:ring-[#4033C3]/10"
-              />
-            </div>
-          </div>
-
-          {message && (
-            <p
-              role="status"
-              className="mt-4 text-sm font-medium text-[#4033C3]"
-            >
-              {message}
-            </p>
-          )}
-
-          <button
-            type="button"
-            onClick={confirmLoan}
-            disabled={
-              !borrowerName.trim() ||
-              !dueDate ||
-              selectedBooks.length === 0
-            }
-            className="mt-6 w-full rounded-xl bg-[#4033C3] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#3328A0] disabled:cursor-not-allowed disabled:bg-[#E7E7ED] disabled:text-[#777783]"
-          >
-            Confirm Loan
-          </button>
-        </div>
-
-        <div className="mt-8 border-t border-[#E7E7ED] pt-6">
-          <h2 className="text-lg font-semibold text-[#252432]">
-            Recent Loans
-          </h2>
-
-          {activeLoans.length === 0 ? (
-            <p className="mt-3 text-sm text-[#777783]">
-              No loans have been recorded yet.
-            </p>
-          ) : (
-            <div className="mt-4 space-y-3">
-              {activeLoans.map((loan) => (
-                <div
-                  key={loan.id}
-                  className="rounded-xl border border-[#E7E7ED] p-4"
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="font-semibold text-[#252432]">
-                        {loan.borrowerName}
-                      </p>
-
-                      <p className="mt-1 text-sm text-[#777783]">
-                        Due date: {loan.dueDate}
-                      </p>
-                    </div>
-
-                    <span
-                      className={`w-fit rounded-full px-3 py-1 text-xs font-medium ${
-                        loan.returned
-                          ? "bg-green-100 text-green-700"
-                          : "bg-[#4033C3]/10 text-[#4033C3]"
-                      }`}
-                    >
-                      {loan.returned ? "Returned" : "Active"}
-                    </span>
-                  </div>
-
-                  <ul className="mt-3 list-inside list-disc text-sm text-[#777783]">
-                    {loan.books.map((book) => (
-                      <li key={book.id}>
-                        {book.title} × {book.quantity}
-                      </li>
-                    ))}
-                  </ul>
-
-                  {!loan.returned && (
-                    <button
-                      type="button"
-                      onClick={() => returnLoan(loan.id)}
-                      className="mt-4 rounded-xl bg-[#4033C3] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#3328A0]"
-                    >
-                      Return Books
-                    </button>
-                  )}
+          <div className="space-y-8">
+            <section className="rounded-2xl border border-[#E7E7ED] bg-white p-5 shadow-sm sm:p-6">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-[#4033C3]">
+                    STEP 2
+                  </p>
+                  <h2 className="mt-1 text-xl font-bold text-[#252432]">
+                    Loan basket
+                  </h2>
                 </div>
-              ))}
-            </div>
-          )}
+                <span className="rounded-full bg-[#4033C3]/10 px-3 py-1 text-sm font-semibold text-[#4033C3]">
+                  {selectedCopiesCount} copies
+                </span>
+              </div>
+
+              {selectedBooks.length === 0 ? (
+                <div className="mt-5 rounded-xl border border-dashed border-[#D5D5E0] px-4 py-8 text-center">
+                  <BookOpen className="mx-auto text-[#777783]" size={28} />
+                  <p className="mt-3 font-medium text-[#252432]">
+                    Your basket is empty
+                  </p>
+                  <p className="mt-1 text-sm text-[#777783]">
+                    Add a book from the collection to get started.
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-5 space-y-3">
+                  {selectedBooks.map((book) => {
+                    const currentBook = books.find(
+                      (item) => item.id === book.id
+                    );
+
+                    if (!currentBook) return null;
+
+                    const available =
+                      currentBook.totalCopies - currentBook.borrowedCopies;
+
+                    return (
+                      <div
+                        key={book.id}
+                        className="rounded-xl bg-[#F8F7F4] p-4"
+                      >
+                        <p className="font-semibold text-[#252432]">
+                          {book.title}
+                        </p>
+                        <div className="mt-3 flex items-center justify-between gap-3">
+                          <span className="text-xs text-[#777783]">
+                            Quantity
+                          </span>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => decreaseQuantity(book.id)}
+                              aria-label={`Decrease quantity of ${book.title}`}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D5D5E0] bg-white text-[#4033C3] hover:bg-[#4033C3]/10"
+                            >
+                              <Minus size={14} />
+                            </button>
+                            <span className="min-w-4 text-center text-sm font-bold">
+                              {book.quantity}
+                            </span>
+                            <button
+                              type="button"
+                              disabled={book.quantity >= available}
+                              onClick={() => increaseQuantity(book.id)}
+                              aria-label={`Increase quantity of ${book.title}`}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D5D5E0] bg-white text-[#4033C3] hover:bg-[#4033C3]/10 disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              <Plus size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="mt-5 border-t border-[#E7E7ED] pt-5">
+                <p className="text-sm font-medium text-[#252432]">
+                  Borrower information
+                </p>
+
+                <label
+                  htmlFor="borrowerName"
+                  className="mb-2 mt-4 flex items-center gap-2 text-sm text-[#777783]"
+                >
+                  <UserRound size={16} />
+                  Borrower name
+                </label>
+                <input
+                  id="borrowerName"
+                  type="text"
+                  value={borrowerName}
+                  onChange={(event) => setBorrowerName(event.target.value)}
+                  placeholder="Enter borrower name"
+                  className="w-full rounded-xl border border-[#D5D5E0] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#4033C3] focus:ring-2 focus:ring-[#4033C3]/10"
+                />
+
+                <label
+                  htmlFor="dueDate"
+                  className="mb-2 mt-4 flex items-center gap-2 text-sm text-[#777783]"
+                >
+                  <CalendarDays size={16} />
+                  Due date
+                </label>
+                <input
+                  id="dueDate"
+                  type="date"
+                  min={todayString}
+                  value={dueDate}
+                  onChange={(event) => setDueDate(event.target.value)}
+                  className="w-full rounded-xl border border-[#D5D5E0] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#4033C3] focus:ring-2 focus:ring-[#4033C3]/10"
+                />
+
+                {message && (
+                  <p
+                    role="status"
+                    className={`mt-4 flex items-start gap-2 rounded-xl p-3 text-sm ${
+                      message.includes("successfully")
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-amber-50 text-amber-800"
+                    }`}
+                  >
+                    {message.includes("successfully") ? (
+                      <CheckCircle2 className="mt-0.5 shrink-0" size={16} />
+                    ) : (
+                      <CircleAlert className="mt-0.5 shrink-0" size={16} />
+                    )}
+                    {message}
+                  </p>
+                )}
+
+                <button
+                  type="button"
+                  onClick={confirmLoan}
+                  disabled={
+                    !borrowerName.trim() ||
+                    !dueDate ||
+                    selectedBooks.length === 0
+                  }
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#4033C3] px-4 py-3 font-semibold text-white transition hover:bg-[#5144D8] disabled:cursor-not-allowed disabled:bg-[#E7E7ED] disabled:text-[#777783]"
+                >
+                  Confirm Loan
+                  <ArrowRight size={17} />
+                </button>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-[#E7E7ED] bg-white p-5 shadow-sm sm:p-6">
+              <div>
+                <p className="text-sm font-medium text-[#4033C3]">
+                  LOAN ACTIVITY
+                </p>
+                <h2 className="mt-1 text-xl font-bold text-[#252432]">
+                  Recent loans
+                </h2>
+              </div>
+
+              {activeLoans.length === 0 ? (
+                <div className="mt-5 rounded-xl bg-[#F8F7F4] px-4 py-6 text-center">
+                  <p className="text-sm text-[#777783]">
+                    No loans recorded yet.
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-5 space-y-3">
+                  {[...activeLoans].reverse().map((loan) => (
+                    <article
+                      key={loan.id}
+                      className="rounded-xl border border-[#E7E7ED] p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-[#252432]">
+                            {loan.borrowerName}
+                          </p>
+                          <p className="mt-1 text-xs text-[#777783]">
+                            Due {loan.dueDate}
+                          </p>
+                        </div>
+
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            loan.returned
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-[#4033C3]/10 text-[#4033C3]"
+                          }`}
+                        >
+                          {loan.returned ? "Returned" : "Active"}
+                        </span>
+                      </div>
+
+                      <ul className="mt-3 space-y-1 text-sm text-[#777783]">
+                        {loan.books.map((book) => (
+                          <li key={book.id}>
+                            {book.title} × {book.quantity}
+                          </li>
+                        ))}
+                      </ul>
+
+                      {!loan.returned && (
+                        <button
+                          type="button"
+                          onClick={() => returnLoan(loan.id)}
+                          className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#252432] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#4033C3]"
+                        >
+                          <RotateCcw size={15} />
+                          Return books
+                        </button>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
         </div>
-      </section>
+      </div>
     </main>
   );
 }
