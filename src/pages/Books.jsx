@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Search,
@@ -30,6 +29,7 @@ function Books() {
     const subjectMatches =
       selectedSubject === "All" || book.subject === selectedSubject;
     const availableCopies = book.totalCopies - book.borrowedCopies;
+    
     const availabilityMatches =
       !showBorrowableOnly || availableCopies > 0;
 
