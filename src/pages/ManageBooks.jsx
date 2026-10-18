@@ -28,35 +28,32 @@ function ManageBooks() {
     totalCopies: "",
   });
 
-  const isSuccess = [
-    "Book added successfully!",
-    "Book updated successfully.",
-    "Book deleted successfully.",
-  ].includes(message);
+  const isSuccess =
+    message === "Book added successfully!" ||
+    message === "Book updated successfully." ||
+    message === "Book deleted successfully.";
 
-  const filteredBooks = books.filter((book) =>
-    `${book.title} ${book.author} ${book.subject}`
-      .toLowerCase()
-      .includes(search.toLowerCase().trim())
-  );
+  const filteredBooks = books.filter((book) => {
+    const bookDetails = `${book.title} ${book.author} ${book.subject}`;
+    return bookDetails.toLowerCase().includes(search.toLowerCase().trim());
+  });
 
-  const totalCopies = books.reduce(
-    (total, book) => total + book.totalCopies,
-    0
-  );
+  const totalCopies = books.reduce((total, book) => {
+    return total + book.totalCopies;
+  }, 0);
 
-  const availableCopies = books.reduce(
-    (total, book) => total + book.totalCopies - book.borrowedCopies,
-    0
-  );
+  const availableCopies = books.reduce((total, book) => {
+    return total + book.totalCopies - book.borrowedCopies;
+  }, 0);
 
   function handleChange(event) {
-    const { name, value } = event.target;
+    const fieldName = event.target.name;
+    const fieldValue = event.target.value;
 
-    setFormData((currentData) => ({
-      ...currentData,
-      [name]: value,
-    }));
+    setFormData({
+      ...formData,
+      [fieldName]: fieldValue,
+    });
 
     setMessage("");
   }
@@ -85,20 +82,18 @@ function ManageBooks() {
       return;
     }
 
-    if (
-      !Number.isInteger(totalCopiesValue) ||
-      totalCopiesValue < 1
-    ) {
+    if (!Number.isInteger(totalCopiesValue) || totalCopiesValue < 1) {
       setMessage("Total copies must be a whole number greater than zero.");
       return;
     }
 
-    const duplicateBook = books.some(
-      (book) =>
-        book.id !== editingBookId &&
-        book.title.toLowerCase() === title.toLowerCase() &&
-        book.author.toLowerCase() === author.toLowerCase()
-    );
+    const duplicateBook = books.find((book) => {
+      const sameTitle = book.title.toLowerCase() === title.toLowerCase();
+      const sameAuthor = book.author.toLowerCase() === author.toLowerCase();
+      const isDifferentBook = book.id !== editingBookId;
+
+      return sameTitle && sameAuthor && isDifferentBook;
+    });
 
     if (duplicateBook) {
       setMessage("This book already exists in the inventory.");
@@ -106,9 +101,7 @@ function ManageBooks() {
     }
 
     if (editingBookId !== null) {
-      const editingBook = books.find(
-        (book) => book.id === editingBookId
-      );
+      const editingBook = books.find((book) => book.id === editingBookId);
 
       if (!editingBook) {
         setMessage("Book not found.");
@@ -120,32 +113,33 @@ function ManageBooks() {
         return;
       }
 
-      setBooks((currentBooks) =>
-        currentBooks.map((book) =>
-          book.id === editingBookId
-            ? {
-                ...book,
-                title,
-                author,
-                subject,
-                totalCopies: totalCopiesValue,
-              }
-            : book
-        )
-      );
+      const updatedBooks = books.map((book) => {
+        if (book.id !== editingBookId) {
+          return book;
+        }
 
+        return {
+          ...book,
+          title: title,
+          author: author,
+          subject: subject,
+          totalCopies: totalCopiesValue,
+        };
+      });
+
+      setBooks(updatedBooks);
       setMessage("Book updated successfully.");
     } else {
       const newBook = {
         id: Date.now(),
-        title,
-        author,
-        subject,
+        title: title,
+        author: author,
+        subject: subject,
         totalCopies: totalCopiesValue,
         borrowedCopies: 0,
       };
 
-      setBooks((currentBooks) => [...currentBooks, newBook]);
+      setBooks([...books, newBook]);
       setMessage("Book added successfully!");
     }
 
@@ -176,11 +170,12 @@ function ManageBooks() {
       `Are you sure you want to delete "${book.title}"?`
     );
 
-    if (!confirmed) return;
+    if (!confirmed) {
+      return;
+    }
 
-    setBooks((currentBooks) =>
-      currentBooks.filter((item) => item.id !== book.id)
-    );
+    const remainingBooks = books.filter((item) => item.id !== book.id);
+    setBooks(remainingBooks);
 
     if (editingBookId === book.id) {
       resetForm();
