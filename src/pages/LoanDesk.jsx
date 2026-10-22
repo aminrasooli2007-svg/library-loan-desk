@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   BookOpen,
@@ -13,7 +12,6 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useBooks } from "../context/BooksContext";
-
 function LoanDesk() {
   const { books, setBooks } = useBooks();
 
@@ -130,7 +128,7 @@ function LoanDesk() {
       setMessage("The due date cannot be in the past.");
       return;
     }
-
+      
     const unavailableBook = selectedBooks.some((selectedBook) => {
       const book = books.find((item) => item.id === selectedBook.id);
 

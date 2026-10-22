@@ -157,7 +157,6 @@ function ManageBooks() {
     });
 
     setMessage("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function handleDelete(book) {
