@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   Search,
@@ -7,15 +8,73 @@ import {
 } from "lucide-react";
 import { Link } from "react-router";
 import { useBooks } from "../context/BooksContext";
+import { useLanguage } from "../i18n/LanguageContext";
 import BookCard from "../components/BookCard";
 
 function Books() {
   const { books } = useBooks();
+  const { language } = useLanguage();
+  const isPersian = language === "fa";
 
   const [search, setSearch] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("All");
   const [sortOrder, setSortOrder] = useState("default");
   const [showBorrowableOnly, setShowBorrowableOnly] = useState(false);
+
+  const text = {
+    en: {
+      eyebrow: "YOUR READING SPACE",
+      title: "Explore the Collection",
+      description:
+        "Find your next favorite book, discover new subjects, and check which titles are ready to borrow.",
+      bookTitles: "Book titles",
+      findBook: "Find a book",
+      search: "Search",
+      searchPlaceholder: "Title or author...",
+      subject: "Subject",
+      allSubjects: "All Subjects",
+      sortBy: "Sort by availability",
+      defaultOrder: "Default order",
+      mostAvailable: "Most available",
+      fewestAvailable: "Fewest available",
+      borrowableOnly: "Only show books available to borrow",
+      resetFilters: "Reset filters",
+      collection: "Book Collection",
+      titlesShown: "titles shown",
+      openLoanDesk: "Open Loan Desk",
+      noBooks: "No books found",
+      noBooksDescription:
+        "Try a different search, choose another subject, or change the availability filter.",
+      clearFilters: "Clear all filters",
+    },
+    fa: {
+      eyebrow: "فضای مطالعه شما",
+      title: "مجموعه کتاب‌ها را کاوش کنید",
+      description:
+        "کتاب موردعلاقه بعدی خود را پیدا کنید، با موضوعات جدید آشنا شوید و کتاب‌های آماده امانت را بررسی کنید.",
+      bookTitles: "عنوان کتاب",
+      findBook: "پیدا کردن کتاب",
+      search: "جستجو",
+      searchPlaceholder: "عنوان یا نام نویسنده...",
+      subject: "موضوع",
+      allSubjects: "همه موضوعات",
+      sortBy: "مرتب‌سازی بر اساس موجودی",
+      defaultOrder: "ترتیب پیش‌فرض",
+      mostAvailable: "بیشترین موجودی",
+      fewestAvailable: "کمترین موجودی",
+      borrowableOnly: "فقط کتاب‌های آماده امانت نمایش داده شوند",
+      resetFilters: "بازنشانی فیلترها",
+      collection: "مجموعه کتاب‌ها",
+      titlesShown: "عنوان نمایش داده شده",
+      openLoanDesk: "ورود به بخش امانت",
+      noBooks: "کتابی پیدا نشد",
+      noBooksDescription:
+        "عبارت دیگری جستجو کنید، موضوع دیگری انتخاب کنید یا فیلتر موجودی را تغییر دهید.",
+      clearFilters: "پاک کردن همه فیلترها",
+    },
+  };
+
+  const copy = text[isPersian ? "fa" : "en"];
 
   const subjects = [
     "All",
@@ -29,7 +88,7 @@ function Books() {
     const subjectMatches =
       selectedSubject === "All" || book.subject === selectedSubject;
     const availableCopies = book.totalCopies - book.borrowedCopies;
-    
+
     const availabilityMatches =
       !showBorrowableOnly || availableCopies > 0;
 
@@ -58,22 +117,28 @@ function Books() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F8F7F4]">
+    <main
+      dir={isPersian ? "rtl" : "ltr"}
+      className="min-h-screen bg-[#F8F7F4]"
+    >
       <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-12">
         <section className="relative mb-8 overflow-hidden rounded-[2rem] bg-[#252432] px-6 py-9 text-white sm:px-10 sm:py-12">
-          <div className="pointer-events-none absolute -right-12 -top-16 h-56 w-56 rounded-full bg-[#4033C3]/40 blur-3xl" />
+          <div
+            className={`pointer-events-none absolute ${
+              isPersian ? "-left-12" : "-right-12"
+            } -top-16 h-56 w-56 rounded-full bg-[#4033C3]/40 blur-3xl`}
+          />
 
           <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
             <div>
               <p className="mb-3 text-sm font-medium text-[#F0A17F]">
-                YOUR READING SPACE
+                {copy.eyebrow}
               </p>
               <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-                Explore the Collection
+                {copy.title}
               </h1>
               <p className="mt-3 max-w-xl text-sm leading-6 text-white/65 sm:text-base">
-                Find your next favorite book, discover new subjects, and check
-                which titles are ready to borrow.
+                {copy.description}
               </p>
             </div>
 
@@ -81,7 +146,7 @@ function Books() {
               <BookOpen size={25} className="text-[#B9B1FF]" />
               <div>
                 <p className="text-2xl font-bold">{books.length}</p>
-                <p className="text-xs text-white/60">Book titles</p>
+                <p className="text-xs text-white/60">{copy.bookTitles}</p>
               </div>
             </div>
           </div>
@@ -90,7 +155,9 @@ function Books() {
         <section className="mb-8 rounded-2xl border border-[#E7E7ED] bg-white p-5 shadow-sm sm:p-6">
           <div className="mb-5 flex items-center gap-2">
             <SlidersHorizontal size={19} className="text-[#4033C3]" />
-            <h2 className="font-semibold text-[#252432]">Find a book</h2>
+            <h2 className="font-semibold text-[#252432]">
+              {copy.findBook}
+            </h2>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_200px_220px]">
@@ -99,20 +166,24 @@ function Books() {
                 htmlFor="book-search"
                 className="mb-2 block text-sm font-medium text-[#252432]"
               >
-                Search
+                {copy.search}
               </label>
               <div className="relative">
                 <Search
                   size={18}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#777783]"
+                  className={`absolute ${
+                    isPersian ? "right-3.5" : "left-3.5"
+                  } top-1/2 -translate-y-1/2 text-[#777783]`}
                 />
                 <input
                   id="book-search"
                   type="search"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Title or author..."
-                  className="w-full rounded-xl border border-[#D5D5E0] bg-[#FCFCFB] py-3 pl-10 pr-4 text-sm text-[#252432] outline-none transition placeholder:text-[#9999A3] focus:border-[#4033C3] focus:ring-2 focus:ring-[#4033C3]/10"
+                  placeholder={copy.searchPlaceholder}
+                  className={`w-full rounded-xl border border-[#D5D5E0] bg-[#FCFCFB] py-3 ${
+                    isPersian ? "pr-10 pl-4" : "pl-10 pr-4"
+                  } text-sm text-[#252432] outline-none transition placeholder:text-[#9999A3] focus:border-[#4033C3] focus:ring-2 focus:ring-[#4033C3]/10`}
                 />
               </div>
             </div>
@@ -122,7 +193,7 @@ function Books() {
                 htmlFor="subject-filter"
                 className="mb-2 block text-sm font-medium text-[#252432]"
               >
-                Subject
+                {copy.subject}
               </label>
               <select
                 id="subject-filter"
@@ -132,7 +203,7 @@ function Books() {
               >
                 {subjects.map((subject) => (
                   <option key={subject} value={subject}>
-                    {subject === "All" ? "All Subjects" : subject}
+                    {subject === "All" ? copy.allSubjects : subject}
                   </option>
                 ))}
               </select>
@@ -143,7 +214,7 @@ function Books() {
                 htmlFor="sort-books"
                 className="mb-2 block text-sm font-medium text-[#252432]"
               >
-                Sort by availability
+                {copy.sortBy}
               </label>
               <select
                 id="sort-books"
@@ -151,9 +222,9 @@ function Books() {
                 onChange={(event) => setSortOrder(event.target.value)}
                 className="w-full rounded-xl border border-[#D5D5E0] bg-[#FCFCFB] px-4 py-3 text-sm text-[#252432] outline-none transition focus:border-[#4033C3] focus:ring-2 focus:ring-[#4033C3]/10"
               >
-                <option value="default">Default order</option>
-                <option value="most">Most available</option>
-                <option value="fewest">Fewest available</option>
+                <option value="default">{copy.defaultOrder}</option>
+                <option value="most">{copy.mostAvailable}</option>
+                <option value="fewest">{copy.fewestAvailable}</option>
               </select>
             </div>
           </div>
@@ -168,7 +239,7 @@ function Books() {
                 }
                 className="h-4 w-4 accent-[#4033C3]"
               />
-              Only show books available to borrow
+              {copy.borrowableOnly}
             </label>
 
             <button
@@ -177,7 +248,7 @@ function Books() {
               className="inline-flex w-fit items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[#777783] transition hover:bg-[#E7E7ED] hover:text-[#4033C3]"
             >
               <RotateCcw size={15} />
-              Reset filters
+              {copy.resetFilters}
             </button>
           </div>
         </section>
@@ -186,10 +257,11 @@ function Books() {
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="text-xl font-bold text-[#252432]">
-                Book Collection
+                {copy.collection}
               </h2>
               <p className="mt-1 text-sm text-[#777783]">
-                {sortedBooks.length} of {books.length} titles shown
+                {sortedBooks.length} {isPersian ? "از" : "of"} {books.length}{" "}
+                {copy.titlesShown}
               </p>
             </div>
 
@@ -197,7 +269,7 @@ function Books() {
               to="/loans"
               className="rounded-xl bg-[#4033C3] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#5144D8]"
             >
-              Open Loan Desk
+              {copy.openLoanDesk}
             </Link>
           </div>
 
@@ -213,18 +285,17 @@ function Books() {
                 <Search size={25} />
               </div>
               <h2 className="mt-4 text-lg font-semibold text-[#252432]">
-                No books found
+                {copy.noBooks}
               </h2>
               <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#777783]">
-                Try a different search, choose another subject, or change the
-                availability filter.
+                {copy.noBooksDescription}
               </p>
               <button
                 type="button"
                 onClick={resetFilters}
                 className="mt-5 rounded-xl bg-[#4033C3] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#5144D8]"
               >
-                Clear all filters
+                {copy.clearFilters}
               </button>
             </div>
           )}
