@@ -1,7 +1,7 @@
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
-const LanguageContext = createContext();
+const LanguageContext = createContext(null);
 
 const translations = {
   en: {
@@ -32,30 +32,38 @@ const translations = {
 
 export function LanguageProvider({ children }) {
   const [language, setLanguage] = useState(() => {
-    return localStorage.getItem("library-language") || "en";
+    const savedLanguage = localStorage.getItem("library-language");
+    return savedLanguage === "fa" ? "fa" : "en";
   });
 
   useEffect(() => {
     document.documentElement.lang = language;
     document.documentElement.dir = language === "fa" ? "rtl" : "ltr";
+
     localStorage.setItem("library-language", language);
   }, [language]);
 
-  const t = (key) => translations[language][key] || key;
+  const t = (key) => translations[language][key] ?? key;
 
   const toggleLanguage = () => {
-    setLanguage((current) => (current === "en" ? "fa" : "en"));
+    setLanguage((currentLanguage) =>
+      currentLanguage === "en" ? "fa" : "en"
+    );
   };
 
   return (
-    <LanguageContext.Provider
-      value={{ language, t, toggleLanguage }}
-    >
+    <LanguageContext.Provider value={{ language, t, toggleLanguage }}>
       {children}
     </LanguageContext.Provider>
   );
 }
 
 export function useLanguage() {
-  return useContext(LanguageContext);
+  const context = useContext(LanguageContext);
+
+  if (!context) {
+    throw new Error("useLanguage must be used within LanguageProvider");
+  }
+
+  return context;
 }
