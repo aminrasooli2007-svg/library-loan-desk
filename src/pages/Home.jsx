@@ -9,9 +9,95 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useBooks } from "../context/BooksContext";
+import { useLanguage } from "../i18n/LanguageContext";
 
 function Home() {
   const { books } = useBooks();
+  const { language, t } = useLanguage();
+  const isPersian = language === "fa";
+
+  const text = {
+    en: {
+      badge: "Your Library, Organized",
+      title: "Every book has a story.",
+      subtitle: "Find yours here.",
+      description:
+        "Discover your collection, keep track of borrowed books, and make every library visit a little easier.",
+      explore: "Explore Books",
+      openLoan: "Open Loan Desk",
+      joy: "The joy of reading",
+      world: "A world",
+      between: "between",
+      pages: "the pages.",
+      collection: "LibraryDesk Collection",
+      glance: "At a glance",
+      overview: "Your library overview",
+      physical: "physical copies in total",
+      totalTitles: "Total Titles",
+      totalDescription: "Different books in your library",
+      availableCopies: "Available Copies",
+      availableDescription: "Ready to be borrowed",
+      borrowedCopies: "Borrowed Copies",
+      borrowedDescription: "Currently on loan",
+      nextRead: "Pick your next read",
+      availableBooks: "Available books",
+      availableDescriptionLong:
+        "Books with copies currently available in your collection.",
+      viewAll: "View all books",
+      available: "available",
+      noBooks: "No books available right now",
+      noBooksDescription:
+        "Visit the book collection to manage your inventory.",
+      manageBooks: "Manage Books",
+      keepUpdated: "Keep your collection up to date",
+      addUpdate: "Need to add or update a book?",
+      manageDescription:
+        "Manage your titles and copy counts from one simple workspace.",
+      manageCollection: "Manage Collection",
+      viewBook: (title) => `View ${title} in the books page`,
+    },
+    fa: {
+      badge: "کتابخانه‌ات را منظم نگه دار",
+      title: "هر کتاب داستانی دارد.",
+      subtitle: "داستان خودت را اینجا پیدا کن.",
+      description:
+        "مجموعه کتاب‌هایت را ببین، کتاب‌های امانت‌گرفته‌شده را پیگیری کن و استفاده از کتابخانه را آسان‌تر ساز.",
+      explore: "مشاهده کتاب‌ها",
+      openLoan: "ورود به میز امانت",
+      joy: "لذت کتاب‌خوانی",
+      world: "دنیایی",
+      between: "در میان",
+      pages: "صفحه‌ها.",
+      collection: "مجموعه کتاب‌های LibraryDesk",
+      glance: "نگاهی سریع",
+      overview: "نمای کلی کتابخانه",
+      physical: "نسخه کتاب در مجموع",
+      totalTitles: "تعداد عنوان‌ها",
+      totalDescription: "تعداد کتاب‌های متفاوت در کتابخانه",
+      availableCopies: "نسخه‌های موجود",
+      availableDescription: "آماده برای امانت گرفتن",
+      borrowedCopies: "نسخه‌های امانت‌داده‌شده",
+      borrowedDescription: "در حال حاضر نزد امانت‌گیرندگان",
+      nextRead: "کتاب بعدی خود را انتخاب کن",
+      availableBooks: "کتاب‌های موجود",
+      availableDescriptionLong:
+        "کتاب‌هایی که در حال حاضر نسخه قابل امانت دارند.",
+      viewAll: "مشاهده همه کتاب‌ها",
+      available: "نسخه موجود",
+      noBooks: "در حال حاضر کتابی موجود نیست",
+      noBooksDescription:
+        "برای مدیریت موجودی به بخش کتاب‌ها مراجعه کن.",
+      manageBooks: "مدیریت کتاب‌ها",
+      keepUpdated: "مجموعه کتاب‌هایت را به‌روز نگه دار",
+      addUpdate: "می‌خواهی کتابی اضافه یا ویرایش کنی؟",
+      manageDescription:
+        "عنوان کتاب‌ها و تعداد نسخه‌هایشان را در یک بخش ساده مدیریت کن.",
+      manageCollection: "مدیریت مجموعه",
+      viewBook: (title) => `مشاهده کتاب ${title} در صفحه کتاب‌ها`,
+    },
+  };
+
+  const copy = text[language];
 
   const totalBooks = books.length;
 
@@ -36,27 +122,30 @@ function Home() {
 
   const stats = [
     {
-      label: "Total Titles",
+      label: t("totalTitles"),
       value: totalBooks,
       icon: LibraryBig,
-      description: "Different books in your library",
+      description: t("totalDescription"),
     },
     {
-      label: "Available Copies",
+      label: t("availableCopies"),
       value: availableCopies,
       icon: BookOpen,
-      description: "Ready to be borrowed",
+      description: t("availableDescription"),
     },
     {
-      label: "Borrowed Copies",
+      label: t("borrowedCopies"),
       value: borrowedCopies,
       icon: BookCheck,
-      description: "Currently on loan",
+      description: t("borrowedDescription"),
     },
   ];
 
   return (
-    <main className="min-h-screen bg-[#F8F7F4]">
+    <main
+      dir={isPersian ? "rtl" : "ltr"}
+      className="min-h-screen bg-[#F8F7F4]"
+    >
       <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-12">
         <section className="relative overflow-hidden rounded-[2rem] bg-[#252432] px-6 py-10 text-white sm:px-10 sm:py-14 lg:px-14">
           <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-[#4033C3]/40 blur-3xl" />
@@ -66,19 +155,18 @@ function Home() {
             <div>
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-sm text-white/80">
                 <Sparkles size={15} className="text-[#F0A17F]" />
-                Your Library, Organized
+                {copy.badge}
               </div>
 
               <h1 className="max-w-2xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-                Every book has a story.
+                {copy.title}
                 <span className="mt-2 block text-[#B9B1FF]">
-                  Find yours here.
+                  {copy.subtitle}
                 </span>
               </h1>
 
               <p className="mt-5 max-w-xl text-base leading-7 text-white/65 sm:text-lg">
-                Discover your collection, keep track of borrowed books, and
-                make every library visit a little easier.
+                {copy.description}
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
@@ -86,15 +174,18 @@ function Home() {
                   to="/books"
                   className="inline-flex items-center gap-2 rounded-xl bg-[#4033C3] px-5 py-3 font-semibold text-white transition hover:bg-[#5144D8]"
                 >
-                  Explore Books
-                  <ArrowRight size={18} />
+                  {copy.explore}
+                  <ArrowRight
+                    size={18}
+                    className={isPersian ? "rotate-180" : ""}
+                  />
                 </Link>
 
                 <Link
                   to="/loans"
                   className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-5 py-3 font-semibold text-white transition hover:bg-white/10"
                 >
-                  Open Loan Desk
+                  {copy.openLoan}
                   <ArrowUpRight size={18} />
                 </Link>
               </div>
@@ -103,22 +194,23 @@ function Home() {
             <div className="relative mx-auto w-full max-w-sm">
               <div className="absolute -left-4 top-10 h-40 w-32 rotate-[-12deg] rounded-2xl bg-[#E66B3B]/80 shadow-xl" />
               <div className="absolute -right-3 top-5 h-48 w-36 rotate-[10deg] rounded-2xl bg-[#7C70D9] shadow-xl" />
+
               <div className="relative overflow-hidden rounded-2xl border border-white/20 bg-[#4033C3] p-7 shadow-2xl">
                 <div className="flex min-h-64 flex-col justify-between rounded-xl border border-white/20 p-5">
                   <BookOpen size={38} strokeWidth={1.3} />
                   <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-white/60">
-                      The joy of reading
+                    <p className="text-xs tracking-wide text-white/60">
+                      {copy.joy}
                     </p>
                     <h2 className="mt-3 text-3xl font-bold italic leading-tight">
-                      A world
+                      {copy.world}
                       <br />
-                      between
+                      {copy.between}
                       <br />
-                      the pages.
+                      {copy.pages}
                     </h2>
                   </div>
-                  <p className="text-sm text-white/60">LibraryDesk Collection</p>
+                  <p className="text-sm text-white/60">{copy.collection}</p>
                 </div>
               </div>
             </div>
@@ -129,15 +221,15 @@ function Home() {
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-sm font-medium text-[#4033C3]">
-                At a glance
+                {copy.glance}
               </p>
               <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#252432]">
-                Your library overview
+                {copy.overview}
               </h2>
             </div>
 
             <p className="text-sm text-[#777783]">
-              {totalCopies} physical copies in total
+              {totalCopies} {copy.physical}
             </p>
           </div>
 
@@ -174,13 +266,13 @@ function Home() {
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-sm font-medium text-[#4033C3]">
-                Pick your next read
+                {copy.nextRead}
               </p>
               <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#252432]">
-                Available books
+                {copy.availableBooks}
               </h2>
               <p className="mt-2 text-sm text-[#777783]">
-                Books with copies currently available in your collection.
+                {copy.availableDescriptionLong}
               </p>
             </div>
 
@@ -188,8 +280,11 @@ function Home() {
               to="/books"
               className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-[#4033C3] transition hover:bg-[#4033C3]/10"
             >
-              View all books
-              <ArrowRight size={16} />
+              {copy.viewAll}
+              <ArrowRight
+                size={16}
+                className={isPersian ? "rotate-180" : ""}
+              />
             </Link>
           </div>
 
@@ -217,8 +312,8 @@ function Home() {
                         <h3 className="mt-4 line-clamp-3 text-xl font-bold italic leading-snug">
                           {book.title}
                         </h3>
-                        <p className="mt-3 text-xs uppercase tracking-widest text-white/70">
-                          Library Collection
+                        <p className="mt-3 text-xs tracking-wide text-white/70">
+                          {copy.collection}
                         </p>
                       </div>
                     </div>
@@ -229,11 +324,12 @@ function Home() {
                       </p>
                       <div className="mt-4 flex items-center justify-between gap-2">
                         <span className="rounded-full bg-[#4033C3]/10 px-3 py-1 text-xs font-medium text-[#4033C3]">
-                          {book.totalCopies - book.borrowedCopies} available
+                          {book.totalCopies - book.borrowedCopies}{" "}
+                          {copy.available}
                         </span>
                         <Link
                           to="/books"
-                          aria-label={`View ${book.title} in the books page`}
+                          aria-label={copy.viewBook(book.title)}
                           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#E7E7ED] text-[#4033C3] transition group-hover:border-[#4033C3] group-hover:bg-[#4033C3] group-hover:text-white"
                         >
                           <ArrowUpRight size={17} />
@@ -248,17 +344,20 @@ function Home() {
             <div className="rounded-2xl border border-dashed border-[#D5D5E0] bg-white px-6 py-12 text-center">
               <BookOpen className="mx-auto text-[#777783]" size={32} />
               <h3 className="mt-4 font-semibold text-[#252432]">
-                No books available right now
+                {copy.noBooks}
               </h3>
               <p className="mt-2 text-sm text-[#777783]">
-                Visit the book collection to manage your inventory.
+                {copy.noBooksDescription}
               </p>
               <Link
                 to="/manage-books"
                 className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#4033C3] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#5144D8]"
               >
-                Manage Books
-                <ArrowRight size={16} />
+                {copy.manageBooks}
+                <ArrowRight
+                  size={16}
+                  className={isPersian ? "rotate-180" : ""}
+                />
               </Link>
             </div>
           )}
@@ -267,13 +366,13 @@ function Home() {
         <section className="mt-8 rounded-2xl border border-[#E7E7ED] bg-white p-6 sm:flex sm:items-center sm:justify-between sm:gap-6">
           <div>
             <p className="text-sm font-medium text-[#E66B3B]">
-              Keep your collection up to date
+              {copy.keepUpdated}
             </p>
             <h2 className="mt-2 text-xl font-bold text-[#252432]">
-              Need to add or update a book?
+              {copy.addUpdate}
             </h2>
             <p className="mt-2 text-sm leading-6 text-[#777783]">
-              Manage your titles and copy counts from one simple workspace.
+              {copy.manageDescription}
             </p>
           </div>
 
@@ -281,8 +380,11 @@ function Home() {
             to="/manage-books"
             className="mt-5 inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#252432] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#4033C3] sm:mt-0"
           >
-            Manage Collection
-            <ArrowRight size={17} />
+            {copy.manageCollection}
+            <ArrowRight
+              size={17}
+              className={isPersian ? "rotate-180" : ""}
+            />
           </Link>
         </section>
       </div>
