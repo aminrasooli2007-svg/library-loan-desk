@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   BookOpen,
@@ -12,14 +13,117 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useBooks } from "../context/BooksContext";
+import { useLanguage } from "../i18n/LanguageContext";
+
 function LoanDesk() {
   const { books, setBooks } = useBooks();
+  const { language } = useLanguage();
+  const isPersian = language === "fa";
 
   const [selectedBooks, setSelectedBooks] = useState([]);
   const [borrowerName, setBorrowerName] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [activeLoans, setActiveLoans] = useState([]);
   const [message, setMessage] = useState("");
+
+  const text = {
+    en: {
+      availableCopies: "Available Copies",
+      readyToBorrow: "Ready to be borrowed",
+      activeLoans: "Active Loans",
+      currentlyOnLoan: "Currently on loan",
+      returnedLoans: "Returned Loans",
+      completedReturns: "Completed returns",
+      libraryServices: "LIBRARY SERVICES",
+      loanDesk: "Loan Desk",
+      description: "Manage book borrowing and returns in one organized workspace.",
+      basketCopies: "Copies in your basket",
+      step1: "STEP 1",
+      chooseBooks: "Choose your books",
+      chooseDescription: "Select available books to add them to the loan basket.",
+      by: "By",
+      copy: "copy",
+      copies: "copies",
+      available: "available",
+      addCopy: "Add copy",
+      addToBasket: "Add to basket",
+      step2: "STEP 2",
+      basket: "Loan basket",
+      emptyBasket: "Your basket is empty",
+      emptyDescription: "Add a book from the collection to get started.",
+      quantity: "Quantity",
+      borrowerInfo: "Borrower information",
+      borrowerName: "Borrower name",
+      borrowerPlaceholder: "Enter borrower name",
+      dueDate: "Due date",
+      confirmLoan: "Confirm Loan",
+      loanActivity: "LOAN ACTIVITY",
+      recentLoans: "Recent loans",
+      noLoans: "No loans recorded yet.",
+      returned: "Returned",
+      active: "Active",
+      returnBooks: "Return books",
+      notAvailable: "This book is not available.",
+      noMoreCopies: "No more copies of this book are available.",
+      requiredFields: "Please enter the borrower name, due date, and select a book.",
+      pastDueDate: "The due date cannot be in the past.",
+      insufficientCopies: "Not enough copies are available for one or more books.",
+      loanSuccess: "Loan confirmed successfully!",
+      returnSuccess: "Books returned successfully!",
+      decreaseQuantity: "Decrease quantity of",
+      increaseQuantity: "Increase quantity of",
+      due: "Due",
+    },
+    fa: {
+      availableCopies: "نسخه‌های موجود",
+      readyToBorrow: "آماده برای امانت",
+      activeLoans: "امانت‌های فعال",
+      currentlyOnLoan: "در حال حاضر امانت داده شده",
+      returnedLoans: "امانت‌های بازگشتی",
+      completedReturns: "امانت‌های تکمیل‌شده",
+      libraryServices: "خدمات کتابخانه",
+      loanDesk: "بخش امانت کتاب",
+      description: "امانت گرفتن و بازگرداندن کتاب‌ها را در یک فضای منظم مدیریت کنید.",
+      basketCopies: "نسخه‌های سبد امانت",
+      step1: "مرحله اول",
+      chooseBooks: "کتاب‌های خود را انتخاب کنید",
+      chooseDescription: "کتاب‌های موجود را انتخاب کنید تا به سبد امانت اضافه شوند.",
+      by: "نویسنده:",
+      copy: "نسخه",
+      copies: "نسخه",
+      available: "موجود",
+      addCopy: "افزودن نسخه",
+      addToBasket: "افزودن به سبد",
+      step2: "مرحله دوم",
+      basket: "سبد امانت",
+      emptyBasket: "سبد شما خالی است",
+      emptyDescription: "برای شروع، یک کتاب از مجموعه انتخاب کنید.",
+      quantity: "تعداد",
+      borrowerInfo: "اطلاعات امانت‌گیرنده",
+      borrowerName: "نام امانت‌گیرنده",
+      borrowerPlaceholder: "نام امانت‌گیرنده را وارد کنید",
+      dueDate: "تاریخ بازگرداندن",
+      confirmLoan: "تأیید امانت",
+      loanActivity: "فعالیت‌های امانت",
+      recentLoans: "امانت‌های اخیر",
+      noLoans: "هنوز امانتی ثبت نشده است.",
+      returned: "بازگردانده شده",
+      active: "فعال",
+      returnBooks: "بازگرداندن کتاب‌ها",
+      notAvailable: "این کتاب موجود نیست.",
+      noMoreCopies: "نسخه بیشتری از این کتاب موجود نیست.",
+      requiredFields: "لطفاً نام امانت‌گیرنده و تاریخ بازگرداندن را وارد کرده و یک کتاب انتخاب کنید.",
+      pastDueDate: "تاریخ بازگرداندن نمی‌تواند در گذشته باشد.",
+      insufficientCopies: "تعداد نسخه‌های موجود برای یک یا چند کتاب کافی نیست.",
+      loanSuccess: "امانت با موفقیت ثبت شد!",
+      returnSuccess: "کتاب‌ها با موفقیت بازگردانده شدند!",
+      decreaseQuantity: "کاهش تعداد",
+      increaseQuantity: "افزایش تعداد",
+      due: "مهلت بازگرداندن:",
+    },
+  };
+
+  const copy = text[isPersian ? "fa" : "en"];
 
   const availableCopies = books.reduce(
     (total, book) => total + book.totalCopies - book.borrowedCopies,
@@ -51,7 +155,7 @@ function LoanDesk() {
     const available = book.totalCopies - book.borrowedCopies;
 
     if (available <= 0) {
-      setMessage("This book is not available.");
+      setMessage(copy.notAvailable);
       return;
     }
 
@@ -61,7 +165,7 @@ function LoanDesk() {
 
     if (selectedBook) {
       if (selectedBook.quantity >= available) {
-        setMessage("No more copies of this book are available.");
+        setMessage(copy.noMoreCopies);
         return;
       }
 
@@ -118,17 +222,15 @@ function LoanDesk() {
 
   function confirmLoan() {
     if (!borrowerName.trim() || !dueDate || selectedBooks.length === 0) {
-      setMessage(
-        "Please enter the borrower name, due date, and select a book."
-      );
+      setMessage(copy.requiredFields);
       return;
     }
 
     if (dueDate < todayString) {
-      setMessage("The due date cannot be in the past.");
+      setMessage(copy.pastDueDate);
       return;
     }
-      
+
     const unavailableBook = selectedBooks.some((selectedBook) => {
       const book = books.find((item) => item.id === selectedBook.id);
 
@@ -140,9 +242,7 @@ function LoanDesk() {
     });
 
     if (unavailableBook) {
-      setMessage(
-        "Not enough copies are available for one or more books."
-      );
+      setMessage(copy.insufficientCopies);
       return;
     }
 
@@ -176,7 +276,7 @@ function LoanDesk() {
     setSelectedBooks([]);
     setBorrowerName("");
     setDueDate("");
-    setMessage("Loan confirmed successfully!");
+    setMessage(copy.loanSuccess);
   }
 
   function returnLoan(loanId) {
@@ -211,46 +311,53 @@ function LoanDesk() {
 
     setBooks(updatedBooks);
     setActiveLoans(updatedLoans);
-    setMessage("Books returned successfully!");
+    setMessage(copy.returnSuccess);
   }
 
   const stats = [
     {
-      label: "Available Copies",
+      label: copy.availableCopies,
       value: availableCopies,
-      note: "Ready to be borrowed",
+      note: copy.readyToBorrow,
       icon: BookOpen,
     },
     {
-      label: "Active Loans",
+      label: copy.activeLoans,
       value: activeLoansCount,
-      note: "Currently on loan",
+      note: copy.currentlyOnLoan,
       icon: BookCheck,
     },
     {
-      label: "Returned Loans",
+      label: copy.returnedLoans,
       value: returnedLoansCount,
-      note: "Completed returns",
+      note: copy.completedReturns,
       icon: RotateCcw,
     },
   ];
 
   return (
-    <main className="min-h-screen bg-[#F8F7F4]">
+    <main
+      dir={isPersian ? "rtl" : "ltr"}
+      className="min-h-screen bg-[#F8F7F4]"
+    >
       <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-12">
         <section className="relative mb-8 overflow-hidden rounded-[2rem] bg-[#252432] px-6 py-9 text-white sm:px-10 sm:py-12">
-          <div className="pointer-events-none absolute -right-12 -top-16 h-56 w-56 rounded-full bg-[#4033C3]/40 blur-3xl" />
+          <div
+            className={`pointer-events-none absolute ${
+              isPersian ? "-left-12" : "-right-12"
+            } -top-16 h-56 w-56 rounded-full bg-[#4033C3]/40 blur-3xl`}
+          />
 
           <div className="relative flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
             <div>
               <p className="mb-3 text-sm font-medium text-[#F0A17F]">
-                LIBRARY SERVICES
+                {copy.libraryServices}
               </p>
               <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-                Loan Desk
+                {copy.loanDesk}
               </h1>
               <p className="mt-3 max-w-xl text-sm leading-6 text-white/65 sm:text-base">
-                Manage book borrowing and returns in one organized workspace.
+                {copy.description}
               </p>
             </div>
 
@@ -258,7 +365,7 @@ function LoanDesk() {
               <BookOpen size={25} className="text-[#B9B1FF]" />
               <div>
                 <p className="text-2xl font-bold">{selectedCopiesCount}</p>
-                <p className="text-xs text-white/60">Copies in your basket</p>
+                <p className="text-xs text-white/60">{copy.basketCopies}</p>
               </div>
             </div>
           </div>
@@ -294,13 +401,13 @@ function LoanDesk() {
           <section className="rounded-2xl border border-[#E7E7ED] bg-white p-5 shadow-sm sm:p-6">
             <div className="mb-6">
               <p className="text-sm font-medium text-[#4033C3]">
-                STEP 1
+                {copy.step1}
               </p>
               <h2 className="mt-1 text-xl font-bold text-[#252432]">
-                Choose your books
+                {copy.chooseBooks}
               </h2>
               <p className="mt-2 text-sm text-[#777783]">
-                Select available books to add them to the loan basket.
+                {copy.chooseDescription}
               </p>
             </div>
 
@@ -340,10 +447,10 @@ function LoanDesk() {
                           {book.title}
                         </h3>
                         <p className="mt-1 text-sm text-[#777783]">
-                          By {book.author}
+                          {copy.by} {book.author}
                         </p>
                         <p className="mt-2 text-xs text-[#777783]">
-                          {available} {available === 1 ? "copy" : "copies"} available
+                          {available} {isPersian ? copy.copies : available === 1 ? copy.copy : copy.copies} {copy.available}
                         </p>
                       </div>
 
@@ -354,7 +461,7 @@ function LoanDesk() {
                         className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#4033C3] px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-[#5144D8] disabled:cursor-not-allowed disabled:bg-[#E7E7ED] disabled:text-[#777783]"
                       >
                         <Plus size={16} />
-                        {isSelected ? "Add copy" : "Add to basket"}
+                        {isSelected ? copy.addCopy : copy.addToBasket}
                       </button>
                     </div>
                   </article>
@@ -368,14 +475,14 @@ function LoanDesk() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-[#4033C3]">
-                    STEP 2
+                    {copy.step2}
                   </p>
                   <h2 className="mt-1 text-xl font-bold text-[#252432]">
-                    Loan basket
+                    {copy.basket}
                   </h2>
                 </div>
                 <span className="rounded-full bg-[#4033C3]/10 px-3 py-1 text-sm font-semibold text-[#4033C3]">
-                  {selectedCopiesCount} copies
+                  {selectedCopiesCount} {copy.copies}
                 </span>
               </div>
 
@@ -383,10 +490,10 @@ function LoanDesk() {
                 <div className="mt-5 rounded-xl border border-dashed border-[#D5D5E0] px-4 py-8 text-center">
                   <BookOpen className="mx-auto text-[#777783]" size={28} />
                   <p className="mt-3 font-medium text-[#252432]">
-                    Your basket is empty
+                    {copy.emptyBasket}
                   </p>
                   <p className="mt-1 text-sm text-[#777783]">
-                    Add a book from the collection to get started.
+                    {copy.emptyDescription}
                   </p>
                 </div>
               ) : (
@@ -411,13 +518,13 @@ function LoanDesk() {
                         </p>
                         <div className="mt-3 flex items-center justify-between gap-3">
                           <span className="text-xs text-[#777783]">
-                            Quantity
+                            {copy.quantity}
                           </span>
                           <div className="flex items-center gap-3">
                             <button
                               type="button"
                               onClick={() => decreaseQuantity(book.id)}
-                              aria-label={`Decrease quantity of ${book.title}`}
+                              aria-label={`${copy.decreaseQuantity} ${book.title}`}
                               className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D5D5E0] bg-white text-[#4033C3] hover:bg-[#4033C3]/10"
                             >
                               <Minus size={14} />
@@ -429,7 +536,7 @@ function LoanDesk() {
                               type="button"
                               disabled={book.quantity >= available}
                               onClick={() => increaseQuantity(book.id)}
-                              aria-label={`Increase quantity of ${book.title}`}
+                              aria-label={`${copy.increaseQuantity} ${book.title}`}
                               className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D5D5E0] bg-white text-[#4033C3] hover:bg-[#4033C3]/10 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               <Plus size={14} />
@@ -444,7 +551,7 @@ function LoanDesk() {
 
               <div className="mt-5 border-t border-[#E7E7ED] pt-5">
                 <p className="text-sm font-medium text-[#252432]">
-                  Borrower information
+                  {copy.borrowerInfo}
                 </p>
 
                 <label
@@ -452,14 +559,14 @@ function LoanDesk() {
                   className="mb-2 mt-4 flex items-center gap-2 text-sm text-[#777783]"
                 >
                   <UserRound size={16} />
-                  Borrower name
+                  {copy.borrowerName}
                 </label>
                 <input
                   id="borrowerName"
                   type="text"
                   value={borrowerName}
                   onChange={(event) => setBorrowerName(event.target.value)}
-                  placeholder="Enter borrower name"
+                  placeholder={copy.borrowerPlaceholder}
                   className="w-full rounded-xl border border-[#D5D5E0] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#4033C3] focus:ring-2 focus:ring-[#4033C3]/10"
                 />
 
@@ -468,7 +575,7 @@ function LoanDesk() {
                   className="mb-2 mt-4 flex items-center gap-2 text-sm text-[#777783]"
                 >
                   <CalendarDays size={16} />
-                  Due date
+                  {copy.dueDate}
                 </label>
                 <input
                   id="dueDate"
@@ -483,12 +590,12 @@ function LoanDesk() {
                   <p
                     role="status"
                     className={`mt-4 flex items-start gap-2 rounded-xl p-3 text-sm ${
-                      message.includes("successfully")
+                      [copy.loanSuccess, copy.returnSuccess].includes(message)
                         ? "bg-emerald-50 text-emerald-700"
                         : "bg-amber-50 text-amber-800"
                     }`}
                   >
-                    {message.includes("successfully") ? (
+                    {[copy.loanSuccess, copy.returnSuccess].includes(message) ? (
                       <CheckCircle2 className="mt-0.5 shrink-0" size={16} />
                     ) : (
                       <CircleAlert className="mt-0.5 shrink-0" size={16} />
@@ -507,8 +614,11 @@ function LoanDesk() {
                   }
                   className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#4033C3] px-4 py-3 font-semibold text-white transition hover:bg-[#5144D8] disabled:cursor-not-allowed disabled:bg-[#E7E7ED] disabled:text-[#777783]"
                 >
-                  Confirm Loan
-                  <ArrowRight size={17} />
+                  {copy.confirmLoan}
+                  <ArrowRight
+                    size={17}
+                    className={isPersian ? "rotate-180" : ""}
+                  />
                 </button>
               </div>
             </section>
@@ -516,17 +626,17 @@ function LoanDesk() {
             <section className="rounded-2xl border border-[#E7E7ED] bg-white p-5 shadow-sm sm:p-6">
               <div>
                 <p className="text-sm font-medium text-[#4033C3]">
-                  LOAN ACTIVITY
+                  {copy.loanActivity}
                 </p>
                 <h2 className="mt-1 text-xl font-bold text-[#252432]">
-                  Recent loans
+                  {copy.recentLoans}
                 </h2>
               </div>
 
               {activeLoans.length === 0 ? (
                 <div className="mt-5 rounded-xl bg-[#F8F7F4] px-4 py-6 text-center">
                   <p className="text-sm text-[#777783]">
-                    No loans recorded yet.
+                    {copy.noLoans}
                   </p>
                 </div>
               ) : (
@@ -542,7 +652,7 @@ function LoanDesk() {
                             {loan.borrowerName}
                           </p>
                           <p className="mt-1 text-xs text-[#777783]">
-                            Due {loan.dueDate}
+                            {copy.due} {loan.dueDate}
                           </p>
                         </div>
 
@@ -553,7 +663,7 @@ function LoanDesk() {
                               : "bg-[#4033C3]/10 text-[#4033C3]"
                           }`}
                         >
-                          {loan.returned ? "Returned" : "Active"}
+                          {loan.returned ? copy.returned : copy.active}
                         </span>
                       </div>
 
@@ -572,7 +682,7 @@ function LoanDesk() {
                           className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#252432] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#4033C3]"
                         >
                           <RotateCcw size={15} />
-                          Return books
+                          {copy.returnBooks}
                         </button>
                       )}
                     </article>
