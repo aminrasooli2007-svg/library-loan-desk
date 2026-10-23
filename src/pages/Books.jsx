@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Search,
   SlidersHorizontal,
@@ -7,14 +7,17 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { Link } from "react-router";
-import { useBooks } from "../context/BooksContext";
 import { useLanguage } from "../i18n/LanguageContext";
+import { supabase } from "../lib/supabase";
 import BookCard from "../components/BookCard";
 
 function Books() {
-  const { books } = useBooks();
   const { language } = useLanguage();
   const isPersian = language === "fa";
+
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const [search, setSearch] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("All");
@@ -46,6 +49,9 @@ function Books() {
       noBooksDescription:
         "Try a different search, choose another subject, or change the availability filter.",
       clearFilters: "Clear all filters",
+      loading: "Loading books...",
+      loadError: "Could not load books. Please try again.",
+      retry: "Try again",
     },
     fa: {
       eyebrow: "فضای مطالعه شما",
@@ -71,10 +77,47 @@ function Books() {
       noBooksDescription:
         "عبارت دیگری جستجو کنید، موضوع دیگری انتخاب کنید یا فیلتر موجودی را تغییر دهید.",
       clearFilters: "پاک کردن همه فیلترها",
+      loading: "در حال بارگذاری کتاب‌ها...",
+      loadError: "بارگذاری کتاب‌ها ناموفق بود. لطفاً دوباره تلاش کنید.",
+      retry: "تلاش دوباره",
     },
   };
 
   const copy = text[isPersian ? "fa" : "en"];
+
+  useEffect(() => {
+    async function fetchBooks() {
+      setLoading(true);
+      setError(false);
+
+      const { data, error: fetchError } = await supabase
+        .from("books")
+        .select("*")
+        .order("id", { ascending: true });
+
+      if (fetchError) {
+        console.error("Error fetching books:", fetchError);
+        setError(true);
+        setLoading(false);
+        return;
+      }
+
+      const formattedBooks = data.map((book) => ({
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        subject: book.subject,
+        totalCopies: book.total_copies,
+        borrowedCopies: book.borrowed_copies,
+        availableCopies: book.total_copies - book.borrowed_copies,
+      }));
+
+      setBooks(formattedBooks);
+      setLoading(false);
+    }
+
+    fetchBooks();
+  }, []);
 
   const subjects = [
     "All",
@@ -114,6 +157,37 @@ function Books() {
     setSelectedSubject("All");
     setSortOrder("default");
     setShowBorrowableOnly(false);
+  }
+
+  async function retryFetch() {
+    setLoading(true);
+    setError(false);
+
+    const { data, error: fetchError } = await supabase
+      .from("books")
+      .select("*")
+      .order("id", { ascending: true });
+
+    if (fetchError) {
+      console.error("Error fetching books:", fetchError);
+      setError(true);
+      setLoading(false);
+      return;
+    }
+
+    setBooks(
+      data.map((book) => ({
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        subject: book.subject,
+        totalCopies: book.total_copies,
+        borrowedCopies: book.borrowed_copies,
+        availableCopies: book.total_copies - book.borrowed_copies,
+      }))
+    );
+
+    setLoading(false);
   }
 
   return (
@@ -273,7 +347,22 @@ function Books() {
             </Link>
           </div>
 
-          {sortedBooks.length > 0 ? (
+          {loading ? (
+            <div className="rounded-2xl bg-white px-6 py-14 text-center text-sm text-[#777783]">
+              {copy.loading}
+            </div>
+          ) : error ? (
+            <div className="rounded-2xl border border-dashed border-[#D5D5E0] bg-white px-6 py-14 text-center">
+              <p className="text-sm text-red-600">{copy.loadError}</p>
+              <button
+                type="button"
+                onClick={retryFetch}
+                className="mt-4 rounded-xl bg-[#4033C3] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#5144D8]"
+              >
+                {copy.retry}
+              </button>
+            </div>
+          ) : sortedBooks.length > 0 ? (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {sortedBooks.map((book) => (
                 <BookCard key={book.id} book={book} />
