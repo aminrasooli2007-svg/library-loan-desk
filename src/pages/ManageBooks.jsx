@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useBooks } from "../context/BooksContext";
 import { useLanguage } from "../i18n/LanguageContext";
+import { supabase } from "../lib/supabase";
 import {
   BookPlus,
   BookOpen,
@@ -188,7 +189,7 @@ function ManageBooks() {
     setEditingBookId(null);
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     const title = formData.title.trim();
@@ -209,7 +210,7 @@ function ManageBooks() {
     const duplicateBook = books.find((book) => {
       const sameTitle = book.title.toLowerCase() === title.toLowerCase();
       const sameAuthor = book.author.toLowerCase() === author.toLowerCase();
-      const isDifferentBook = book.id !== editingBookId;
+      const isDifferentBook = String(book.id) !== String(editingBookId);
 
       return sameTitle && sameAuthor && isDifferentBook;
     });
@@ -220,7 +221,9 @@ function ManageBooks() {
     }
 
     if (editingBookId !== null) {
-      const editingBook = books.find((book) => book.id === editingBookId);
+      const editingBook = books.find(
+        (book) => String(book.id) === String(editingBookId)
+      );
 
       if (!editingBook) {
         setMessage("Book not found.");
@@ -231,38 +234,67 @@ function ManageBooks() {
         setMessage("Total copies cannot be less than borrowed copies.");
         return;
       }
-
-      const updatedBooks = books.map((book) => {
-        if (book.id !== editingBookId) {
-          return book;
-        }
-
-        return {
-          ...book,
-          title,
-          author,
-          subject,
-          totalCopies: totalCopiesValue,
-        };
-      });
-
-      setBooks(updatedBooks);
-      setMessage("Book updated successfully.");
-    } else {
-      const newBook = {
-        id: Date.now(),
-        title,
-        author,
-        subject,
-        totalCopies: totalCopiesValue,
-        borrowedCopies: 0,
-      };
-
-      setBooks([...books, newBook]);
-      setMessage("Book added successfully!");
     }
 
-    resetForm();
+    const bookData = {
+      title,
+      author,
+      subject,
+      total_copies: totalCopiesValue,
+    };
+
+    try {
+      if (editingBookId !== null) {
+        const { data, error } = await supabase
+          .from("books")
+          .update(bookData)
+          .eq("id", editingBookId)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        const updatedBook = {
+          id: data.id,
+          title: data.title,
+          author: data.author,
+          subject: data.subject,
+          totalCopies: data.total_copies,
+          borrowedCopies: data.borrowed_copies,
+        };
+
+        setBooks(
+          books.map((book) =>
+            String(book.id) === String(editingBookId) ? updatedBook : book
+          )
+        );
+        setMessage("Book updated successfully.");
+      } else {
+        const { data, error } = await supabase
+          .from("books")
+          .insert({ ...bookData, borrowed_copies: 0 })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        const newBook = {
+          id: data.id,
+          title: data.title,
+          author: data.author,
+          subject: data.subject,
+          totalCopies: data.total_copies,
+          borrowedCopies: data.borrowed_copies,
+        };
+
+        setBooks([...books, newBook]);
+        setMessage("Book added successfully!");
+      }
+
+      resetForm();
+    } catch (error) {
+      setMessage(error.message || "Unable to save book.");
+    }
   }
 
   function handleEdit(book) {
@@ -278,7 +310,7 @@ function ManageBooks() {
     setMessage("");
   }
 
-  function handleDelete(book) {
+  async function handleDelete(book) {
     if (book.borrowedCopies > 0) {
       setMessage("Cannot delete a book that has borrowed copies.");
       return;
@@ -290,14 +322,26 @@ function ManageBooks() {
       return;
     }
 
-    const remainingBooks = books.filter((item) => item.id !== book.id);
-    setBooks(remainingBooks);
+    try {
+      const { error } = await supabase.from("books").delete().eq("id", book.id);
 
-    if (editingBookId === book.id) {
-      resetForm();
+      if (error) throw error;
+
+      setBooks(books.filter((item) => String(item.id) !== String(book.id)));
+
+      if (String(editingBookId) === String(book.id)) {
+        resetForm();
+      }
+
+      setMessage("Book deleted successfully.");
+    } catch (error) {
+      setMessage(
+        error.message ||
+          (isPersian
+            ? "حذف کتاب انجام نشد. ممکن است سابقهٔ امانت برای این کتاب وجود داشته باشد."
+            : "The book could not be deleted. It may have loan history.")
+      );
     }
-
-    setMessage("Book deleted successfully.");
   }
 
   return (
