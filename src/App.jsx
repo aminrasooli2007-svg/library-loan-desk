@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Routes, Route, NavLink } from "react-router";
 import {
   BookOpen,
@@ -5,6 +6,7 @@ import {
   LibraryBig,
   ArrowLeftRight,
   BookPlus,
+  Users,
   Info,
   Mail,
   Languages,
@@ -14,6 +16,7 @@ import Home from "./pages/Home";
 import Books from "./pages/Books";
 import LoanDesk from "./pages/LoanDesk";
 import ManageBooks from "./pages/ManageBooks";
+import Members from "./pages/Members";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import { BooksProvider } from "./context/BooksContext";
@@ -27,6 +30,7 @@ const navItems = [
   { to: "/books", key: "books", icon: LibraryBig },
   { to: "/loans", key: "loanDesk", icon: ArrowLeftRight },
   { to: "/manage-books", key: "manageBooks", icon: BookPlus },
+  { to: "/members", key: "members", icon: Users },
   { to: "/about", key: "about", icon: Info },
   { to: "/contact", key: "contact", icon: Mail },
 ];
@@ -114,6 +118,7 @@ function AppContent() {
             <Route path="/books" element={<Books />} />
             <Route path="/loans" element={<LoanDesk />} />
             <Route path="/manage-books" element={<ManageBooks />} />
+            <Route path="/members" element={<Members />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
           </Routes>
