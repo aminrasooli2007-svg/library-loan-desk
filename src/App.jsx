@@ -10,6 +10,7 @@ import {
   Info,
   Mail,
   Languages,
+  ChartNoAxesCombined,
 } from "lucide-react";
 
 import Home from "./pages/Home";
@@ -17,6 +18,7 @@ import Books from "./pages/Books";
 import LoanDesk from "./pages/LoanDesk";
 import ManageBooks from "./pages/ManageBooks";
 import Members from "./pages/Members";
+import Reports from "./pages/Reports";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import { BooksProvider } from "./context/BooksContext";
@@ -31,6 +33,7 @@ const navItems = [
   { to: "/loans", key: "loanDesk", icon: ArrowLeftRight },
   { to: "/manage-books", key: "manageBooks", icon: BookPlus },
   { to: "/members", key: "members", icon: Users },
+  { to: "/reports", key: "reports", icon: ChartNoAxesCombined },
   { to: "/about", key: "about", icon: Info },
   { to: "/contact", key: "contact", icon: Mail },
 ];
@@ -119,6 +122,7 @@ function AppContent() {
             <Route path="/loans" element={<LoanDesk />} />
             <Route path="/manage-books" element={<ManageBooks />} />
             <Route path="/members" element={<Members />} />
+            <Route path="/reports" element={<Reports />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
           </Routes>
