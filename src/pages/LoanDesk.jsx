@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BookOpen,
   BookCheck,
@@ -13,6 +12,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useBooks } from "../context/BooksContext";
+import { supabase } from "../lib/supabase";
 import { useLanguage } from "../i18n/LanguageContext";
 
 function LoanDesk() {
@@ -25,6 +25,55 @@ function LoanDesk() {
   const [dueDate, setDueDate] = useState("");
   const [activeLoans, setActiveLoans] = useState([]);
   const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function loadBooks() {
+    const { data, error } = await supabase
+      .from("books")
+      .select("*")
+      .order("id", { ascending: true });
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setBooks(
+      data.map((book) => ({
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        subject: book.subject,
+        totalCopies: book.total_copies,
+        borrowedCopies: book.borrowed_copies,
+        availableCopies: book.total_copies - book.borrowed_copies,
+      }))
+    );
+  }
+
+  async function loadLoans() {
+    const { data, error } = await supabase.rpc("get_loan_history");
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setActiveLoans(
+      (data || []).map((loan) => ({
+        id: loan.id,
+        borrowerName: loan.borrower_name,
+        dueDate: loan.due_date,
+        returned: loan.status === "returned",
+        books: loan.items || [],
+      }))
+    );
+  }
+
+  useEffect(() => {
+    loadBooks();
+    loadLoans();
+  }, []);
 
   const text = {
     en: {
@@ -220,7 +269,7 @@ function LoanDesk() {
     setMessage("");
   }
 
-  function confirmLoan() {
+  async function confirmLoan() {
     if (!borrowerName.trim() || !dueDate || selectedBooks.length === 0) {
       setMessage(copy.requiredFields);
       return;
@@ -231,25 +280,28 @@ function LoanDesk() {
       return;
     }
 
-    const unavailableBook = selectedBooks.some((selectedBook) => {
-      const book = books.find((item) => item.id === selectedBook.id);
+    setIsSubmitting(true);
+    setMessage("");
 
-      if (!book) return true;
-
-      const available = book.totalCopies - book.borrowedCopies;
-
-      return selectedBook.quantity > available;
+    const { data: loanId, error } = await supabase.rpc("confirm_loan", {
+      p_borrower_name: borrowerName.trim(),
+      p_due_date: dueDate,
+      p_items: selectedBooks.map((book) => ({
+        book_id: Number(book.id),
+        quantity: book.quantity,
+      })),
     });
 
-    if (unavailableBook) {
-      setMessage(copy.insufficientCopies);
+    if (error) {
+      setMessage(error.message || copy.insufficientCopies);
+      setIsSubmitting(false);
       return;
     }
 
     const newLoan = {
-      id: Date.now(),
+      id: loanId,
       borrowerName: borrowerName.trim(),
-      dueDate: dueDate,
+      dueDate,
       books: selectedBooks.map((book) => ({
         id: book.id,
         title: book.title,
@@ -258,59 +310,32 @@ function LoanDesk() {
       returned: false,
     };
 
-    const updatedBooks = books.map((book) => {
-      const selectedBook = selectedBooks.find(
-        (item) => item.id === book.id
-      );
-
-      if (!selectedBook) return book;
-
-      return {
-        ...book,
-        borrowedCopies: book.borrowedCopies + selectedBook.quantity,
-      };
-    });
-
-    setBooks(updatedBooks);
-    setActiveLoans([...activeLoans, newLoan]);
+    setActiveLoans((currentLoans) => [...currentLoans, newLoan]);
+    await loadLoans();
     setSelectedBooks([]);
     setBorrowerName("");
     setDueDate("");
+    await loadBooks();
     setMessage(copy.loanSuccess);
+    setIsSubmitting(false);
   }
 
-  function returnLoan(loanId) {
+  async function returnLoan(loanId) {
     const loan = activeLoans.find((item) => item.id === loanId);
 
     if (!loan || loan.returned) return;
 
-    const updatedBooks = books.map((book) => {
-      const returnedBook = loan.books.find(
-        (item) => item.id === book.id
-      );
-
-      if (!returnedBook) return book;
-
-      return {
-        ...book,
-        borrowedCopies: Math.max(
-          0,
-          book.borrowedCopies - returnedBook.quantity
-        ),
-      };
+    const { error } = await supabase.rpc("return_loan", {
+      p_loan_id: Number(loanId),
     });
 
-    const updatedLoans = activeLoans.map((item) => {
-      if (item.id !== loanId) return item;
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
 
-      return {
-        ...item,
-        returned: true,
-      };
-    });
-
-    setBooks(updatedBooks);
-    setActiveLoans(updatedLoans);
+    await loadLoans();
+    await loadBooks();
     setMessage(copy.returnSuccess);
   }
 
@@ -610,11 +635,12 @@ function LoanDesk() {
                   disabled={
                     !borrowerName.trim() ||
                     !dueDate ||
-                    selectedBooks.length === 0
+                    selectedBooks.length === 0 ||
+                    isSubmitting
                   }
                   className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#4033C3] px-4 py-3 font-semibold text-white transition hover:bg-[#5144D8] disabled:cursor-not-allowed disabled:bg-[#E7E7ED] disabled:text-[#777783]"
                 >
-                  {copy.confirmLoan}
+                  {isSubmitting ? (isPersian ? "در حال ثبت..." : "Saving...") : copy.confirmLoan}
                   <ArrowRight
                     size={17}
                     className={isPersian ? "rotate-180" : ""}
