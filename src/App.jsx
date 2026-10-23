@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Routes, Route, NavLink } from "react-router";
 import {
   BookOpen,
@@ -21,6 +20,7 @@ import Members from "./pages/Members";
 import Reports from "./pages/Reports";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+
 import { BooksProvider } from "./context/BooksContext";
 import {
   LanguageProvider,
@@ -40,28 +40,35 @@ const navItems = [
 
 function AppContent() {
   const { language, t, toggleLanguage } = useLanguage();
+  const isPersian = language === "fa";
 
   return (
     <BrowserRouter>
       <div
         className="min-h-screen bg-[#F8F7F4] text-[#252432]"
-        dir={language === "fa" ? "rtl" : "ltr"}
+        dir={isPersian ? "rtl" : "ltr"}
       >
         <header className="sticky top-0 z-50 border-b border-[#E7E7ED] bg-white/95 backdrop-blur-md">
           <nav
-            aria-label="Main navigation"
+            aria-label={isPersian ? "منوی اصلی" : "Main navigation"}
             className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:gap-4 sm:px-8 sm:py-4 lg:flex-row lg:items-center lg:justify-between"
           >
             <div className="flex w-full items-center justify-between gap-3 lg:w-auto">
-              <NavLink to="/" className="group flex w-fit items-center gap-3">
+              <NavLink
+                to="/"
+                className="group flex w-fit items-center gap-3"
+                aria-label={isPersian ? "صفحه اصلی" : "Home"}
+              >
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#4033C3] text-white shadow-sm transition group-hover:-rotate-3 group-hover:scale-105">
                   <BookOpen size={24} strokeWidth={1.8} />
                 </span>
 
                 <span>
                   <span className="block text-lg font-bold tracking-tight text-[#252432]">
-                    Library
-                    <span className="text-[#4033C3]">Desk</span>
+                    {isPersian ? "کتابخانه" : "Library"}
+                    <span className="text-[#4033C3]">
+                      {isPersian ? "‌یار" : "Desk"}
+                    </span>
                   </span>
 
                   <span className="mt-0.5 block text-xs tracking-wide text-[#777783]">
@@ -74,7 +81,7 @@ function AppContent() {
                 type="button"
                 onClick={toggleLanguage}
                 className="flex shrink-0 items-center justify-center gap-2 rounded-xl border border-[#E7E7ED] bg-white px-3 py-2.5 text-sm font-semibold text-[#4033C3] transition hover:bg-[#F0EFFD] lg:hidden"
-                aria-label="Change language"
+                aria-label={isPersian ? "تغییر زبان" : "Change language"}
               >
                 <Languages size={17} />
                 <span>{t("language")}</span>
@@ -106,7 +113,7 @@ function AppContent() {
                 type="button"
                 onClick={toggleLanguage}
                 className="hidden shrink-0 items-center justify-center gap-2 rounded-xl border border-[#E7E7ED] bg-white px-3 py-2.5 text-sm font-semibold text-[#4033C3] transition hover:bg-[#F0EFFD] lg:flex"
-                aria-label="Change language"
+                aria-label={isPersian ? "تغییر زبان" : "Change language"}
               >
                 <Languages size={17} />
                 <span>{t("language")}</span>
@@ -131,7 +138,9 @@ function AppContent() {
         <footer className="border-t border-[#E7E7ED] bg-white">
           <div className="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-6 text-sm text-[#777783] sm:flex-row sm:items-center sm:justify-between sm:px-8">
             <p className="font-medium text-[#252432]">
-              <span className="text-[#4033C3]">LibraryDesk</span>
+              <span className="text-[#4033C3]">
+                {isPersian ? "کتابخانه‌یار" : "LibraryDesk"}
+              </span>
               {" — "}
               {t("footer")}
             </p>

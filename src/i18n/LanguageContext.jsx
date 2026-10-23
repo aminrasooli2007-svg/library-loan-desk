@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 
 const LanguageContext = createContext(null);
@@ -9,6 +8,8 @@ const translations = {
     books: "Books",
     loanDesk: "Loan Desk",
     manageBooks: "Manage Books",
+    members: "Members",
+    reports: "Reports",
     about: "About",
     contact: "Contact",
     tagline: "Your personal library space",
@@ -21,6 +22,8 @@ const translations = {
     books: "کتاب‌ها",
     loanDesk: "میز امانت",
     manageBooks: "مدیریت کتاب‌ها",
+    members: "اعضا",
+    reports: "گزارش‌ها",
     about: "درباره ما",
     contact: "تماس با ما",
     tagline: "فضای کتابخانه شخصی شما",
@@ -39,7 +42,6 @@ export function LanguageProvider({ children }) {
   useEffect(() => {
     document.documentElement.lang = language;
     document.documentElement.dir = language === "fa" ? "rtl" : "ltr";
-
     localStorage.setItem("library-language", language);
   }, [language]);
 
