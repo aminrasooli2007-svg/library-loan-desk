@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Routes, Route, NavLink } from "react-router";
 import {
   BookOpen,
@@ -44,27 +43,39 @@ function AppContent() {
         <header className="sticky top-0 z-50 border-b border-[#E7E7ED] bg-white/95 backdrop-blur-md">
           <nav
             aria-label="Main navigation"
-            className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-4 sm:px-8 lg:flex-row lg:items-center lg:justify-between"
+            className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:gap-4 sm:px-8 sm:py-4 lg:flex-row lg:items-center lg:justify-between"
           >
-            <NavLink to="/" className="group flex w-fit items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#4033C3] text-white shadow-sm transition group-hover:-rotate-3 group-hover:scale-105">
-                <BookOpen size={24} strokeWidth={1.8} />
-              </span>
-
-              <span>
-                <span className="block text-lg font-bold tracking-tight text-[#252432]">
-                  Library
-                  <span className="text-[#4033C3]">Desk</span>
+            <div className="flex w-full items-center justify-between gap-3 lg:w-auto">
+              <NavLink to="/" className="group flex w-fit items-center gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#4033C3] text-white shadow-sm transition group-hover:-rotate-3 group-hover:scale-105">
+                  <BookOpen size={24} strokeWidth={1.8} />
                 </span>
 
-                <span className="mt-0.5 block text-xs tracking-wide text-[#777783]">
-                  {t("tagline")}
-                </span>
-              </span>
-            </NavLink>
+                <span>
+                  <span className="block text-lg font-bold tracking-tight text-[#252432]">
+                    Library
+                    <span className="text-[#4033C3]">Desk</span>
+                  </span>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex gap-1 overflow-x-auto pb-1 lg:pb-0">
+                  <span className="mt-0.5 block text-xs tracking-wide text-[#777783]">
+                    {t("tagline")}
+                  </span>
+                </span>
+              </NavLink>
+
+              <button
+                type="button"
+                onClick={toggleLanguage}
+                className="flex shrink-0 items-center justify-center gap-2 rounded-xl border border-[#E7E7ED] bg-white px-3 py-2.5 text-sm font-semibold text-[#4033C3] transition hover:bg-[#F0EFFD] lg:hidden"
+                aria-label="Change language"
+              >
+                <Languages size={17} />
+                <span>{t("language")}</span>
+              </button>
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-center lg:gap-2">
+              <div className="flex min-w-0 gap-1 overflow-x-auto pb-1 lg:pb-0">
                 {navItems.map(({ to, key, icon: Icon, end }) => (
                   <NavLink
                     key={to}
@@ -87,7 +98,7 @@ function AppContent() {
               <button
                 type="button"
                 onClick={toggleLanguage}
-                className="flex shrink-0 items-center justify-center gap-2 rounded-xl border border-[#E7E7ED] bg-white px-3 py-2.5 text-sm font-semibold text-[#4033C3] transition hover:bg-[#F0EFFD]"
+                className="hidden shrink-0 items-center justify-center gap-2 rounded-xl border border-[#E7E7ED] bg-white px-3 py-2.5 text-sm font-semibold text-[#4033C3] transition hover:bg-[#F0EFFD] lg:flex"
                 aria-label="Change language"
               >
                 <Languages size={17} />
