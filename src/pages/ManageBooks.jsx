@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useBooks } from "../context/BooksContext";
 import { useLanguage } from "../i18n/LanguageContext";
@@ -24,6 +25,7 @@ function ManageBooks() {
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
   const [editingBookId, setEditingBookId] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -71,6 +73,7 @@ function ManageBooks() {
       available: "available",
       edit: "Edit",
       delete: "Delete",
+      deleting: "Deleting...",
       fillFields: "Please fill in all fields.",
       validCopies: "Total copies must be a whole number greater than zero.",
       duplicate: "This book already exists in the inventory.",
@@ -80,6 +83,8 @@ function ManageBooks() {
       updated: "Book updated successfully.",
       deleted: "Book deleted successfully.",
       cannotDelete: "Cannot delete a book that has borrowed copies.",
+      deleteDenied:
+        "Deletion failed. The database did not delete the book. Check your permissions or sign in again.",
       confirmDelete: (title) => `Are you sure you want to delete "${title}"?`,
     },
     fa: {
@@ -120,6 +125,7 @@ function ManageBooks() {
       available: "نسخه موجود",
       edit: "ویرایش",
       delete: "حذف",
+      deleting: "در حال حذف...",
       fillFields: "لطفاً تمام فیلدها را تکمیل کنید.",
       validCopies: "تعداد نسخه‌ها باید عدد صحیح بزرگ‌تر از صفر باشد.",
       duplicate: "این کتاب از قبل در فهرست موجودی وجود دارد.",
@@ -130,7 +136,10 @@ function ManageBooks() {
       updated: "مشخصات کتاب با موفقیت به‌روزرسانی شد.",
       deleted: "کتاب با موفقیت حذف شد.",
       cannotDelete: "کتابی که نسخهٔ امانت‌داده‌شده دارد، قابل حذف نیست.",
-      confirmDelete: (title) => `آیا مطمئن هستید که می‌خواهید کتاب «${title}» را حذف کنید؟`,
+      deleteDenied:
+        "کتاب حذف نشد. دسترسی دیتابیس را بررسی کنید یا دوباره وارد حساب شوید.",
+      confirmDelete: (title) =>
+        `آیا مطمئن هستید که می‌خواهید کتاب «${title}» را حذف کنید؟`,
     },
   };
 
@@ -146,6 +155,7 @@ function ManageBooks() {
     "Book updated successfully.": t.updated,
     "Book deleted successfully.": t.deleted,
     "Cannot delete a book that has borrowed copies.": t.cannotDelete,
+    "Deletion failed. Database permissions may deny this action.": t.deleteDenied,
   };
 
   const isSuccess =
@@ -158,22 +168,26 @@ function ManageBooks() {
     return bookDetails.toLowerCase().includes(search.toLowerCase().trim());
   });
 
-  const totalCopies = books.reduce((total, book) => {
-    return total + book.totalCopies;
-  }, 0);
+  const totalCopies = books.reduce(
+    (total, book) => total + Number(book.totalCopies || 0),
+    0
+  );
 
-  const availableCopies = books.reduce((total, book) => {
-    return total + book.totalCopies - book.borrowedCopies;
-  }, 0);
+  const availableCopies = books.reduce(
+    (total, book) =>
+      total +
+      Number(book.totalCopies || 0) -
+      Number(book.borrowedCopies || 0),
+    0
+  );
 
   function handleChange(event) {
-    const fieldName = event.target.name;
-    const fieldValue = event.target.value;
+    const { name, value } = event.target;
 
-    setFormData({
-      ...formData,
-      [fieldName]: fieldValue,
-    });
+    setFormData((current) => ({
+      ...current,
+      [name]: value,
+    }));
 
     setMessage("");
   }
@@ -230,7 +244,7 @@ function ManageBooks() {
         return;
       }
 
-      if (totalCopiesValue < editingBook.borrowedCopies) {
+      if (totalCopiesValue < Number(editingBook.borrowedCopies || 0)) {
         setMessage("Total copies cannot be less than borrowed copies.");
         return;
       }
@@ -263,11 +277,12 @@ function ManageBooks() {
           borrowedCopies: data.borrowed_copies,
         };
 
-        setBooks(
-          books.map((book) =>
+        setBooks((currentBooks) =>
+          currentBooks.map((book) =>
             String(book.id) === String(editingBookId) ? updatedBook : book
           )
         );
+
         setMessage("Book updated successfully.");
       } else {
         const { data, error } = await supabase
@@ -287,12 +302,13 @@ function ManageBooks() {
           borrowedCopies: data.borrowed_copies,
         };
 
-        setBooks([...books, newBook]);
+        setBooks((currentBooks) => [...currentBooks, newBook]);
         setMessage("Book added successfully!");
       }
 
       resetForm();
     } catch (error) {
+      console.error("Save book error:", error);
       setMessage(error.message || "Unable to save book.");
     }
   }
@@ -311,23 +327,41 @@ function ManageBooks() {
   }
 
   async function handleDelete(book) {
-    if (book.borrowedCopies > 0) {
+    if (isDeleting) return;
+
+    if (Number(book.borrowedCopies || 0) > 0) {
       setMessage("Cannot delete a book that has borrowed copies.");
       return;
     }
 
     const confirmed = window.confirm(t.confirmDelete(book.title));
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    setMessage("");
 
     try {
-      const { error } = await supabase.from("books").delete().eq("id", book.id);
+      const { data, error } = await supabase
+        .from("books")
+        .delete()
+        .eq("id", book.id)
+        .select("id");
 
       if (error) throw error;
 
-      setBooks(books.filter((item) => String(item.id) !== String(book.id)));
+      if (!data || data.length === 0) {
+        setMessage(
+          isPersian
+            ? "Deletion failed. Database permissions may deny this action."
+            : "Deletion failed. Database permissions may deny this action."
+        );
+        return;
+      }
+
+      setBooks((currentBooks) =>
+        currentBooks.filter((item) => String(item.id) !== String(book.id))
+      );
 
       if (String(editingBookId) === String(book.id)) {
         resetForm();
@@ -335,12 +369,16 @@ function ManageBooks() {
 
       setMessage("Book deleted successfully.");
     } catch (error) {
+      console.error("Delete book error:", error);
+
       setMessage(
         error.message ||
           (isPersian
             ? "حذف کتاب انجام نشد. ممکن است سابقهٔ امانت برای این کتاب وجود داشته باشد."
             : "The book could not be deleted. It may have loan history.")
       );
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -389,9 +427,7 @@ function ManageBooks() {
             <p className="mt-4 text-3xl font-bold text-[#252432]">
               {books.length}
             </p>
-            <p className="mt-1 text-xs text-[#777783]">
-              {t.differentTitles}
-            </p>
+            <p className="mt-1 text-xs text-[#777783]">{t.differentTitles}</p>
           </div>
 
           <div className="rounded-2xl border border-[#E7E7ED] bg-white p-5 shadow-sm">
@@ -423,9 +459,7 @@ function ManageBooks() {
             <p className="mt-4 text-3xl font-bold text-[#252432]">
               {availableCopies}
             </p>
-            <p className="mt-1 text-xs text-[#777783]">
-              {t.readyToBorrow}
-            </p>
+            <p className="mt-1 text-xs text-[#777783]">{t.readyToBorrow}</p>
           </div>
         </section>
 
@@ -630,7 +664,9 @@ function ManageBooks() {
                 </div>
               ) : (
                 filteredBooks.map((book) => {
-                  const available = book.totalCopies - book.borrowedCopies;
+                  const available =
+                    Number(book.totalCopies || 0) -
+                    Number(book.borrowedCopies || 0);
 
                   return (
                     <article
@@ -687,10 +723,11 @@ function ManageBooks() {
                         <button
                           type="button"
                           onClick={() => handleDelete(book)}
-                          className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#F0DADA] px-3 py-2.5 text-sm font-semibold text-red-600 transition hover:border-red-200 hover:bg-red-50"
+                          disabled={isDeleting}
+                          className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#F0DADA] px-3 py-2.5 text-sm font-semibold text-red-600 transition hover:border-red-200 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <Trash2 size={15} />
-                          {t.delete}
+                          {isDeleting ? t.deleting : t.delete}
                         </button>
                       </div>
                     </article>
