@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BookOpen,
   BookCheck,
@@ -9,182 +10,251 @@ import {
   UserRound,
   CheckCircle2,
   CircleAlert,
-  ArrowRight,
+  LoaderCircle,
 } from "lucide-react";
 import { useBooks } from "../context/BooksContext";
 import { supabase } from "../lib/supabase";
 import { useLanguage } from "../i18n/LanguageContext";
 
+const translations = {
+  en: {
+    title: "Loan Desk",
+    subtitle: "Manage book loans and returns",
+    availableCopies: "Available Copies",
+    activeLoans: "Active Loans",
+    returnedLoans: "Returned Loans",
+    available: "available",
+    searchBooks: "Search books by title or author...",
+    noBooksFound: "No books found.",
+    noAvailableCopies: "No copies available",
+    addToLoan: "Add to Loan",
+    selectedBooks: "Selected Books",
+    emptyBasket: "No books selected yet.",
+    removeOne: "Remove one copy",
+    addOne: "Add one copy",
+    copies: "copies",
+    borrower: "Borrower Name",
+    borrowerPlaceholder: "Enter borrower's name",
+    dueDate: "Due Date",
+    confirmLoan: "Confirm Loan",
+    submitting: "Processing...",
+    loanHistory: "Loan History",
+    noLoans: "No loan records yet.",
+    returned: "Returned",
+    active: "Active",
+    returnBook: "Return Books",
+    returning: "Returning...",
+    requiredFields: "Please complete all fields and select at least one book.",
+    pastDueDate: "Due date cannot be in the past.",
+    notAvailable: "No copies of this book are available.",
+    noMoreCopies: "No more available copies of this book.",
+    loanSuccess: "Loan registered successfully.",
+    returnSuccess: "Books returned successfully.",
+    loadError: "Could not load data. Please try again.",
+    loanError: "Could not register the loan. Please try again.",
+    returnError: "Could not return the books. Please try again.",
+    refresh: "Refresh",
+    loading: "Loading data...",
+    totalSelected: "Total Selected Copies",
+    book: "Book",
+    author: "Author",
+    due: "Due",
+    borrowerRequired: "Borrower name is required.",
+    today: "Today",
+    copiesLabel: "copies",
+    tryAgain: "Try Again",
+    unavailable: "Unavailable",
+  },
+  fa: {
+    title: "بخش امانت کتاب",
+    subtitle: "مدیریت امانت‌ها و بازگشت کتاب‌ها",
+    availableCopies: "نسخه‌های موجود",
+    activeLoans: "امانت‌های فعال",
+    returnedLoans: "امانت‌های بازگشتی",
+    available: "نسخه موجود",
+    searchBooks: "جستجو بر اساس عنوان یا نویسنده...",
+    noBooksFound: "کتابی پیدا نشد.",
+    noAvailableCopies: "نسخه‌ای موجود نیست",
+    addToLoan: "افزودن به امانت",
+    selectedBooks: "کتاب‌های انتخاب‌شده",
+    emptyBasket: "هنوز کتابی انتخاب نشده است.",
+    removeOne: "حذف یک نسخه",
+    addOne: "افزودن یک نسخه",
+    copies: "نسخه",
+    borrower: "نام امانت‌گیرنده",
+    borrowerPlaceholder: "نام امانت‌گیرنده را وارد کنید",
+    dueDate: "تاریخ سررسید",
+    confirmLoan: "ثبت امانت",
+    submitting: "در حال ثبت...",
+    loanHistory: "تاریخچه امانت‌ها",
+    noLoans: "هنوز سابقه‌ای از امانت وجود ندارد.",
+    returned: "بازگشت‌شده",
+    active: "فعال",
+    returnBook: "ثبت بازگشت کتاب‌ها",
+    returning: "در حال بازگشت...",
+    requiredFields: "تمام فیلدها را تکمیل و حداقل یک کتاب انتخاب کنید.",
+    pastDueDate: "تاریخ سررسید نمی‌تواند در گذشته باشد.",
+    notAvailable: "از این کتاب نسخه‌ای موجود نیست.",
+    noMoreCopies: "نسخهٔ بیشتری از این کتاب موجود نیست.",
+    loanSuccess: "امانت با موفقیت ثبت شد.",
+    returnSuccess: "بازگشت کتاب‌ها با موفقیت ثبت شد.",
+    loadError: "بارگذاری اطلاعات انجام نشد. دوباره تلاش کنید.",
+    loanError: "ثبت امانت انجام نشد. دوباره تلاش کنید.",
+    returnError: "بازگشت کتاب‌ها انجام نشد. دوباره تلاش کنید.",
+    refresh: "بارگذاری مجدد",
+    loading: "در حال دریافت اطلاعات...",
+    totalSelected: "مجموع نسخه‌های انتخاب‌شده",
+    book: "کتاب",
+    author: "نویسنده",
+    due: "سررسید",
+    borrowerRequired: "وارد کردن نام امانت‌گیرنده ضروری است.",
+    today: "امروز",
+    copiesLabel: "نسخه",
+    tryAgain: "تلاش دوباره",
+    unavailable: "ناموجود",
+  },
+};
+
+function formatDate(value, language) {
+  if (!value) return "—";
+
+  const date = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat(
+    language === "fa" ? "fa-IR" : "en-GB",
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }
+  ).format(date);
+}
+
 function LoanDesk() {
   const { books, setBooks } = useBooks();
   const { language } = useLanguage();
+
   const isPersian = language === "fa";
+  const copy = translations[isPersian ? "fa" : "en"];
+
+  const todayString = useMemo(() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  }, []);
 
   const [selectedBooks, setSelectedBooks] = useState([]);
   const [borrowerName, setBorrowerName] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [activeLoans, setActiveLoans] = useState([]);
+  const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("success");
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [returningLoanId, setReturningLoanId] = useState(null);
 
-  async function loadBooks() {
+  const showMessage = useCallback((text, type = "success") => {
+    setMessage(text);
+    setMessageType(type);
+  }, []);
+
+  const loadBooks = useCallback(async () => {
     const { data, error } = await supabase
       .from("books")
       .select("*")
       .order("id", { ascending: true });
 
     if (error) {
-      setMessage(error.message);
-      return;
+      throw error;
     }
 
-    setBooks(
-      data.map((book) => ({
-        id: book.id,
-        title: book.title,
-        author: book.author,
-        subject: book.subject,
-        totalCopies: book.total_copies,
-        borrowedCopies: book.borrowed_copies,
-        availableCopies: book.total_copies - book.borrowed_copies,
-      }))
-    );
-  }
+    const mappedBooks = (data || []).map((book) => ({
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      subject: book.subject,
+      totalCopies: Number(book.total_copies),
+      borrowedCopies: Number(book.borrowed_copies),
+      availableCopies:
+        Number(book.total_copies) - Number(book.borrowed_copies),
+    }));
 
-  async function loadLoans() {
+    setBooks(mappedBooks);
+
+    return mappedBooks;
+  }, [setBooks]);
+
+  const loadLoans = useCallback(async () => {
     const { data, error } = await supabase.rpc("get_loan_history");
 
     if (error) {
-      setMessage(error.message);
-      return;
+      throw error;
     }
 
-    setActiveLoans(
-      (data || []).map((loan) => ({
-        id: loan.id,
-        borrowerName: loan.borrower_name,
-        dueDate: loan.due_date,
-        returned: loan.status === "returned",
-        books: loan.items || [],
-      }))
-    );
-  }
+    const mappedLoans = (data || []).map((loan) => ({
+      id: loan.id,
+      borrowerName: loan.borrower_name,
+      dueDate: loan.due_date,
+      returned: loan.status === "returned",
+      books: (loan.items || []).map((item) => ({
+        id: item.book_id ?? item.id,
+        title: item.title,
+        quantity: Number(item.quantity),
+      })),
+    }));
 
-  useEffect(() => {
-    loadBooks();
-    loadLoans();
+    setActiveLoans(mappedLoans);
+
+    return mappedLoans;
   }, []);
 
-  const text = {
-    en: {
-      availableCopies: "Available Copies",
-      readyToBorrow: "Ready to be borrowed",
-      activeLoans: "Active Loans",
-      currentlyOnLoan: "Currently on loan",
-      returnedLoans: "Returned Loans",
-      completedReturns: "Completed returns",
-      libraryServices: "LIBRARY SERVICES",
-      loanDesk: "Loan Desk",
-      description: "Manage book borrowing and returns in one organized workspace.",
-      basketCopies: "Copies in your basket",
-      step1: "STEP 1",
-      chooseBooks: "Choose your books",
-      chooseDescription: "Select available books to add them to the loan basket.",
-      by: "By",
-      copy: "copy",
-      copies: "copies",
-      available: "available",
-      addCopy: "Add copy",
-      addToBasket: "Add to basket",
-      step2: "STEP 2",
-      basket: "Loan basket",
-      emptyBasket: "Your basket is empty",
-      emptyDescription: "Add a book from the collection to get started.",
-      quantity: "Quantity",
-      borrowerInfo: "Borrower information",
-      borrowerName: "Borrower name",
-      borrowerPlaceholder: "Enter borrower name",
-      dueDate: "Due date",
-      confirmLoan: "Confirm Loan",
-      loanActivity: "LOAN ACTIVITY",
-      recentLoans: "Recent loans",
-      noLoans: "No loans recorded yet.",
-      returned: "Returned",
-      active: "Active",
-      returnBooks: "Return books",
-      notAvailable: "This book is not available.",
-      noMoreCopies: "No more copies of this book are available.",
-      requiredFields: "Please enter the borrower name, due date, and select a book.",
-      pastDueDate: "The due date cannot be in the past.",
-      insufficientCopies: "Not enough copies are available for one or more books.",
-      loanSuccess: "Loan confirmed successfully!",
-      returnSuccess: "Books returned successfully!",
-      decreaseQuantity: "Decrease quantity of",
-      increaseQuantity: "Increase quantity of",
-      due: "Due",
-    },
-    fa: {
-      availableCopies: "نسخه‌های موجود",
-      readyToBorrow: "آماده برای امانت",
-      activeLoans: "امانت‌های فعال",
-      currentlyOnLoan: "در حال حاضر امانت داده شده",
-      returnedLoans: "امانت‌های بازگشتی",
-      completedReturns: "امانت‌های تکمیل‌شده",
-      libraryServices: "خدمات کتابخانه",
-      loanDesk: "بخش امانت کتاب",
-      description: "امانت گرفتن و بازگرداندن کتاب‌ها را در یک فضای منظم مدیریت کنید.",
-      basketCopies: "نسخه‌های سبد امانت",
-      step1: "مرحله اول",
-      chooseBooks: "کتاب‌های خود را انتخاب کنید",
-      chooseDescription: "کتاب‌های موجود را انتخاب کنید تا به سبد امانت اضافه شوند.",
-      by: "نویسنده:",
-      copy: "نسخه",
-      copies: "نسخه",
-      available: "موجود",
-      addCopy: "افزودن نسخه",
-      addToBasket: "افزودن به سبد",
-      step2: "مرحله دوم",
-      basket: "سبد امانت",
-      emptyBasket: "سبد شما خالی است",
-      emptyDescription: "برای شروع، یک کتاب از مجموعه انتخاب کنید.",
-      quantity: "تعداد",
-      borrowerInfo: "اطلاعات امانت‌گیرنده",
-      borrowerName: "نام امانت‌گیرنده",
-      borrowerPlaceholder: "نام امانت‌گیرنده را وارد کنید",
-      dueDate: "تاریخ بازگرداندن",
-      confirmLoan: "تأیید امانت",
-      loanActivity: "فعالیت‌های امانت",
-      recentLoans: "امانت‌های اخیر",
-      noLoans: "هنوز امانتی ثبت نشده است.",
-      returned: "بازگردانده شده",
-      active: "فعال",
-      returnBooks: "بازگرداندن کتاب‌ها",
-      notAvailable: "این کتاب موجود نیست.",
-      noMoreCopies: "نسخه بیشتری از این کتاب موجود نیست.",
-      requiredFields: "لطفاً نام امانت‌گیرنده و تاریخ بازگرداندن را وارد کرده و یک کتاب انتخاب کنید.",
-      pastDueDate: "تاریخ بازگرداندن نمی‌تواند در گذشته باشد.",
-      insufficientCopies: "تعداد نسخه‌های موجود برای یک یا چند کتاب کافی نیست.",
-      loanSuccess: "امانت با موفقیت ثبت شد!",
-      returnSuccess: "کتاب‌ها با موفقیت بازگردانده شدند!",
-      decreaseQuantity: "کاهش تعداد",
-      increaseQuantity: "افزایش تعداد",
-      due: "مهلت بازگرداندن:",
-    },
-  };
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
 
-  const copy = text[isPersian ? "fa" : "en"];
+    try {
+      await Promise.all([loadBooks(), loadLoans()]);
+    } catch {
+      showMessage(copy.loadError, "error");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [loadBooks, loadLoans, showMessage, copy.loadError]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const filteredBooks = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    if (!query) return books;
+
+    return books.filter((book) => {
+      const title = String(book.title || "").toLowerCase();
+      const author = String(book.author || "").toLowerCase();
+
+      return title.includes(query) || author.includes(query);
+    });
+  }, [books, search]);
 
   const availableCopies = books.reduce(
-    (total, book) => total + book.totalCopies - book.borrowedCopies,
+    (total, book) =>
+      total + Math.max(0, book.totalCopies - book.borrowedCopies),
     0
   );
 
   const activeLoansCount = activeLoans.filter(
-    (loan) => loan.returned === false
+    (loan) => !loan.returned
   ).length;
 
   const returnedLoansCount = activeLoans.filter(
-    (loan) => loan.returned === true
+    (loan) => loan.returned
   ).length;
 
   const selectedCopiesCount = selectedBooks.reduce(
@@ -192,61 +262,60 @@ function LoanDesk() {
     0
   );
 
-  const today = new Date();
-
-  const todayString = [
-    today.getFullYear(),
-    String(today.getMonth() + 1).padStart(2, "0"),
-    String(today.getDate()).padStart(2, "0"),
-  ].join("-");
-
   function addBook(book) {
     const available = book.totalCopies - book.borrowedCopies;
 
     if (available <= 0) {
-      setMessage(copy.notAvailable);
+      showMessage(copy.notAvailable, "error");
       return;
     }
 
     const selectedBook = selectedBooks.find(
-      (item) => item.id === book.id
+      (item) => String(item.id) === String(book.id)
     );
 
     if (selectedBook) {
       if (selectedBook.quantity >= available) {
-        setMessage(copy.noMoreCopies);
+        showMessage(copy.noMoreCopies, "error");
         return;
       }
 
-      increaseQuantity(book.id);
+      setSelectedBooks((current) =>
+        current.map((item) =>
+          String(item.id) === String(book.id)
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        )
+      );
+
+      setMessage("");
       return;
     }
 
-    const newSelectedBook = {
-      ...book,
-      quantity: 1,
-    };
+    setSelectedBooks((current) => [
+      ...current,
+      { ...book, quantity: 1 },
+    ]);
 
-    setSelectedBooks([...selectedBooks, newSelectedBook]);
     setMessage("");
   }
 
   function increaseQuantity(bookId) {
-    const book = books.find((item) => item.id === bookId);
+    const book = books.find(
+      (item) => String(item.id) === String(bookId)
+    );
 
     if (!book) return;
 
     const available = book.totalCopies - book.borrowedCopies;
 
-    setSelectedBooks(
-      selectedBooks.map((item) => {
-        if (item.id !== bookId) return item;
+    setSelectedBooks((current) =>
+      current.map((item) => {
+        if (String(item.id) !== String(bookId)) return item;
+
         if (item.quantity >= available) return item;
 
-        return {
-          ...item,
-          quantity: item.quantity + 1,
-        };
+        return { ...item, quantity: item.quantity + 1 };
       })
     );
 
@@ -254,472 +323,526 @@ function LoanDesk() {
   }
 
   function decreaseQuantity(bookId) {
-    const updatedBooks = selectedBooks
-      .map((book) => {
-        if (book.id !== bookId) return book;
+    setSelectedBooks((current) =>
+      current
+        .map((book) =>
+          String(book.id) === String(bookId)
+            ? { ...book, quantity: book.quantity - 1 }
+            : book
+        )
+        .filter((book) => book.quantity > 0)
+    );
 
-        return {
-          ...book,
-          quantity: book.quantity - 1,
-        };
-      })
-      .filter((book) => book.quantity > 0);
-
-    setSelectedBooks(updatedBooks);
     setMessage("");
   }
 
-  async function confirmLoan() {
-    if (!borrowerName.trim() || !dueDate || selectedBooks.length === 0) {
-      setMessage(copy.requiredFields);
+  async function confirmLoan(event) {
+    event.preventDefault();
+
+    if (
+      !borrowerName.trim() ||
+      !dueDate ||
+      selectedBooks.length === 0
+    ) {
+      showMessage(copy.requiredFields, "error");
       return;
     }
 
     if (dueDate < todayString) {
-      setMessage(copy.pastDueDate);
+      showMessage(copy.pastDueDate, "error");
       return;
     }
 
     setIsSubmitting(true);
     setMessage("");
 
-    const { data: loanId, error } = await supabase.rpc("confirm_loan", {
-      p_borrower_name: borrowerName.trim(),
-      p_due_date: dueDate,
-      p_items: selectedBooks.map((book) => ({
-        book_id: Number(book.id),
-        quantity: book.quantity,
-      })),
-    });
+    try {
+      const { error } = await supabase.rpc("confirm_loan", {
+        p_borrower_name: borrowerName.trim(),
+        p_due_date: dueDate,
+        p_items: selectedBooks.map((book) => ({
+          book_id: Number(book.id),
+          quantity: book.quantity,
+        })),
+      });
 
-    if (error) {
-      setMessage(error.message || copy.insufficientCopies);
+      if (error) {
+        showMessage(copy.loanError, "error");
+        return;
+      }
+
+      setSelectedBooks([]);
+      setBorrowerName("");
+      setDueDate("");
+
+      await Promise.all([loadBooks(), loadLoans()]);
+
+      showMessage(copy.loanSuccess, "success");
+    } catch {
+      showMessage(copy.loanError, "error");
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-
-    const newLoan = {
-      id: loanId,
-      borrowerName: borrowerName.trim(),
-      dueDate,
-      books: selectedBooks.map((book) => ({
-        id: book.id,
-        title: book.title,
-        quantity: book.quantity,
-      })),
-      returned: false,
-    };
-
-    setActiveLoans((currentLoans) => [...currentLoans, newLoan]);
-    await loadLoans();
-    setSelectedBooks([]);
-    setBorrowerName("");
-    setDueDate("");
-    await loadBooks();
-    setMessage(copy.loanSuccess);
-    setIsSubmitting(false);
   }
 
   async function returnLoan(loanId) {
-    const loan = activeLoans.find((item) => item.id === loanId);
+    const loan = activeLoans.find(
+      (item) => String(item.id) === String(loanId)
+    );
 
-    if (!loan || loan.returned) return;
-
-    const { error } = await supabase.rpc("return_loan", {
-      p_loan_id: Number(loanId),
-    });
-
-    if (error) {
-      setMessage(error.message);
+    if (!loan || loan.returned || returningLoanId !== null) {
       return;
     }
 
-    await loadLoans();
-    await loadBooks();
-    setMessage(copy.returnSuccess);
+    setReturningLoanId(loanId);
+    setMessage("");
+
+    try {
+      const { error } = await supabase.rpc("return_loan", {
+        p_loan_id: Number(loanId),
+      });
+
+      if (error) {
+        showMessage(copy.returnError, "error");
+        return;
+      }
+
+      await Promise.all([loadBooks(), loadLoans()]);
+
+      showMessage(copy.returnSuccess, "success");
+    } catch {
+      showMessage(copy.returnError, "error");
+    } finally {
+      setReturningLoanId(null);
+    }
   }
 
-  const stats = [
-    {
-      label: copy.availableCopies,
-      value: availableCopies,
-      note: copy.readyToBorrow,
-      icon: BookOpen,
-    },
-    {
-      label: copy.activeLoans,
-      value: activeLoansCount,
-      note: copy.currentlyOnLoan,
-      icon: BookCheck,
-    },
-    {
-      label: copy.returnedLoans,
-      value: returnedLoansCount,
-      note: copy.completedReturns,
-      icon: RotateCcw,
-    },
-  ];
+  const cardClass =
+    "rounded-2xl border border-[#E7E7ED] bg-white p-5 shadow-sm";
+
+  const inputClass =
+    "w-full rounded-xl border border-[#E7E7ED] bg-[#F8F7F4] px-4 py-3 text-sm text-[#252432] outline-none transition focus:border-[#4033C3] focus:ring-2 focus:ring-[#4033C3]/10";
+
+  const primaryButtonClass =
+    "inline-flex items-center justify-center gap-2 rounded-xl bg-[#4033C3] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#3428a5] disabled:cursor-not-allowed disabled:opacity-50";
 
   return (
-    <main
+    <div
       dir={isPersian ? "rtl" : "ltr"}
-      className="min-h-screen bg-[#F8F7F4]"
+      className="min-h-screen bg-[#F8F7F4] px-4 py-6 text-[#252432] sm:px-6 lg:px-8"
     >
-      <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-12">
-        <section className="relative mb-8 overflow-hidden rounded-[2rem] bg-[#252432] px-6 py-9 text-white sm:px-10 sm:py-12">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              {copy.title}
+            </h1>
+            <p className="mt-2 text-sm text-[#777582]">
+              {copy.subtitle}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={loadData}
+            disabled={isLoading}
+            className="inline-flex items-center justify-center gap-2 self-start rounded-xl border border-[#E7E7ED] bg-white px-4 py-3 text-sm font-medium transition hover:border-[#4033C3] disabled:opacity-50"
+          >
+            <RotateCcw size={16} />
+            {copy.refresh}
+          </button>
+        </div>
+
+        {message && (
           <div
-            className={`pointer-events-none absolute ${
-              isPersian ? "-left-12" : "-right-12"
-            } -top-16 h-56 w-56 rounded-full bg-[#4033C3]/40 blur-3xl`}
-          />
+            role="status"
+            className={`flex items-start gap-3 rounded-xl border p-4 text-sm ${
+              messageType === "error"
+                ? "border-red-200 bg-red-50 text-red-700"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700"
+            }`}
+          >
+            {messageType === "error" ? (
+              <CircleAlert size={19} className="mt-0.5 shrink-0" />
+            ) : (
+              <CheckCircle2 size={19} className="mt-0.5 shrink-0" />
+            )}
+            <span>{message}</span>
+          </div>
+        )}
 
-          <div className="relative flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-            <div>
-              <p className="mb-3 text-sm font-medium text-[#F0A17F]">
-                {copy.libraryServices}
-              </p>
-              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-                {copy.loanDesk}
-              </h1>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-white/65 sm:text-base">
-                {copy.description}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-5 py-4">
-              <BookOpen size={25} className="text-[#B9B1FF]" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className={cardClass}>
+            <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-2xl font-bold">{selectedCopiesCount}</p>
-                <p className="text-xs text-white/60">{copy.basketCopies}</p>
+                <p className="text-sm text-[#777582]">
+                  {copy.availableCopies}
+                </p>
+                <p className="mt-3 text-3xl font-bold">
+                  {isLoading ? "—" : availableCopies}
+                </p>
+              </div>
+              <div className="rounded-xl bg-[#4033C3]/10 p-3 text-[#4033C3]">
+                <BookOpen size={24} />
               </div>
             </div>
           </div>
-        </section>
 
-        <section className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {stats.map(({ label, value, note, icon: Icon }) => (
-            <article
-              key={label}
-              className="rounded-2xl border border-[#E7E7ED] bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md sm:p-6"
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-[#777783]">
-                    {label}
-                  </p>
-                  <p className="mt-3 text-3xl font-bold text-[#252432]">
-                    {value}
-                  </p>
-                </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#4033C3]/10 text-[#4033C3]">
-                  <Icon size={23} />
-                </div>
+          <div className={cardClass}>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm text-[#777582]">
+                  {copy.activeLoans}
+                </p>
+                <p className="mt-3 text-3xl font-bold">
+                  {isLoading ? "—" : activeLoansCount}
+                </p>
               </div>
-              <p className="mt-4 border-t border-[#E7E7ED] pt-4 text-sm text-[#777783]">
-                {note}
-              </p>
-            </article>
-          ))}
-        </section>
+              <div className="rounded-xl bg-orange-100 p-3 text-[#E66B3B]">
+                <BookCheck size={24} />
+              </div>
+            </div>
+          </div>
 
-        <div className="grid items-start gap-8 lg:grid-cols-[1.15fr_0.85fr]">
-          <section className="rounded-2xl border border-[#E7E7ED] bg-white p-5 shadow-sm sm:p-6">
-            <div className="mb-6">
-              <p className="text-sm font-medium text-[#4033C3]">
-                {copy.step1}
-              </p>
-              <h2 className="mt-1 text-xl font-bold text-[#252432]">
-                {copy.chooseBooks}
-              </h2>
-              <p className="mt-2 text-sm text-[#777783]">
-                {copy.chooseDescription}
+          <div className={cardClass}>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm text-[#777582]">
+                  {copy.returnedLoans}
+                </p>
+                <p className="mt-3 text-3xl font-bold">
+                  {isLoading ? "—" : returnedLoansCount}
+                </p>
+              </div>
+              <div className="rounded-xl bg-emerald-100 p-3 text-emerald-700">
+                <CheckCircle2 size={24} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+          <section className={`${cardClass} space-y-5`}>
+            <div>
+              <h2 className="text-lg font-bold">{copy.book}</h2>
+              <p className="mt-1 text-sm text-[#777582]">
+                {copy.addToLoan}
               </p>
             </div>
 
-            <div className="space-y-3">
-              {books.map((book, index) => {
-                const available =
-                  book.totalCopies - book.borrowedCopies;
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder={copy.searchBooks}
+              className={inputClass}
+              aria-label={copy.searchBooks}
+            />
 
-                const isSelected = selectedBooks.some(
-                  (item) => item.id === book.id
-                );
+            {isLoading ? (
+              <div className="flex items-center justify-center gap-2 py-12 text-sm text-[#777582]">
+                <LoaderCircle size={20} className="animate-spin" />
+                {copy.loading}
+              </div>
+            ) : filteredBooks.length === 0 ? (
+              <p className="py-10 text-center text-sm text-[#777582]">
+                {copy.noBooksFound}
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                {filteredBooks.map((book) => {
+                  const available =
+                    book.totalCopies - book.borrowedCopies;
 
-                const coverColors = [
-                  "from-[#4033C3] to-[#7770D8]",
-                  "from-[#385B50] to-[#789487]",
-                  "from-[#A45135] to-[#E6A17F]",
-                  "from-[#343B54] to-[#7584A5]",
-                ];
+                  const selected = selectedBooks.find(
+                    (item) =>
+                      String(item.id) === String(book.id)
+                  );
 
-                return (
-                  <article
-                    key={book.id}
-                    className="flex gap-4 rounded-xl border border-[#E7E7ED] p-4 transition hover:border-[#C9C3F5]"
-                  >
+                  const unavailable = available <= 0;
+
+                  return (
                     <div
-                      className={`flex h-24 w-16 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${coverColors[index % coverColors.length]} p-2 text-center text-white shadow-sm`}
+                      key={book.id}
+                      className="flex min-w-0 flex-col justify-between gap-4 rounded-xl border border-[#E7E7ED] p-4 transition hover:border-[#4033C3]/40"
                     >
-                      <BookOpen size={24} strokeWidth={1.5} />
-                    </div>
-
-                    <div className="flex min-w-0 flex-1 flex-col justify-between gap-3 sm:flex-row sm:items-center">
                       <div className="min-w-0">
-                        <p className="text-xs font-medium text-[#4033C3]">
-                          {book.subject}
-                        </p>
-                        <h3 className="mt-1 font-semibold text-[#252432]">
+                        <h3 className="break-words font-semibold">
                           {book.title}
                         </h3>
-                        <p className="mt-1 text-sm text-[#777783]">
-                          {copy.by} {book.author}
+                        <p className="mt-1 break-words text-sm text-[#777582]">
+                          {book.author || "—"}
                         </p>
-                        <p className="mt-2 text-xs text-[#777783]">
-                          {available} {isPersian ? copy.copies : available === 1 ? copy.copy : copy.copies} {copy.available}
+
+                        {book.subject && (
+                          <span className="mt-3 inline-flex rounded-lg bg-[#4033C3]/8 px-2.5 py-1 text-xs text-[#4033C3]">
+                            {book.subject}
+                          </span>
+                        )}
+
+                        <p
+                          className={`mt-3 text-xs font-medium ${
+                            unavailable
+                              ? "text-red-600"
+                              : "text-emerald-700"
+                          }`}
+                        >
+                          {unavailable
+                            ? copy.noAvailableCopies
+                            : `${available} ${copy.available}`}
                         </p>
                       </div>
 
                       <button
                         type="button"
-                        disabled={available <= 0}
                         onClick={() => addBook(book)}
-                        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#4033C3] px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-[#5144D8] disabled:cursor-not-allowed disabled:bg-[#E7E7ED] disabled:text-[#777783]"
+                        disabled={unavailable || isSubmitting}
+                        className={primaryButtonClass}
                       >
                         <Plus size={16} />
-                        {isSelected ? copy.addCopy : copy.addToBasket}
+                        {selected
+                          ? `${copy.addToLoan} (${selected.quantity})`
+                          : copy.addToLoan}
                       </button>
                     </div>
-                  </article>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </section>
 
-          <div className="space-y-8">
-            <section className="rounded-2xl border border-[#E7E7ED] bg-white p-5 shadow-sm sm:p-6">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-[#4033C3]">
-                    {copy.step2}
-                  </p>
-                  <h2 className="mt-1 text-xl font-bold text-[#252432]">
-                    {copy.basket}
-                  </h2>
-                </div>
-                <span className="rounded-full bg-[#4033C3]/10 px-3 py-1 text-sm font-semibold text-[#4033C3]">
-                  {selectedCopiesCount} {copy.copies}
-                </span>
-              </div>
+          <section className={`${cardClass} space-y-5`}>
+            <div>
+              <h2 className="text-lg font-bold">
+                {copy.selectedBooks}
+              </h2>
+              <p className="mt-1 text-sm text-[#777582]">
+                {copy.totalSelected}: {selectedCopiesCount}
+              </p>
+            </div>
 
-              {selectedBooks.length === 0 ? (
-                <div className="mt-5 rounded-xl border border-dashed border-[#D5D5E0] px-4 py-8 text-center">
-                  <BookOpen className="mx-auto text-[#777783]" size={28} />
-                  <p className="mt-3 font-medium text-[#252432]">
-                    {copy.emptyBasket}
-                  </p>
-                  <p className="mt-1 text-sm text-[#777783]">
-                    {copy.emptyDescription}
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-5 space-y-3">
-                  {selectedBooks.map((book) => {
-                    const currentBook = books.find(
-                      (item) => item.id === book.id
-                    );
-
-                    if (!currentBook) return null;
-
-                    const available =
-                      currentBook.totalCopies - currentBook.borrowedCopies;
-
-                    return (
-                      <div
-                        key={book.id}
-                        className="rounded-xl bg-[#F8F7F4] p-4"
-                      >
-                        <p className="font-semibold text-[#252432]">
-                          {book.title}
-                        </p>
-                        <div className="mt-3 flex items-center justify-between gap-3">
-                          <span className="text-xs text-[#777783]">
-                            {copy.quantity}
-                          </span>
-                          <div className="flex items-center gap-3">
-                            <button
-                              type="button"
-                              onClick={() => decreaseQuantity(book.id)}
-                              aria-label={`${copy.decreaseQuantity} ${book.title}`}
-                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D5D5E0] bg-white text-[#4033C3] hover:bg-[#4033C3]/10"
-                            >
-                              <Minus size={14} />
-                            </button>
-                            <span className="min-w-4 text-center text-sm font-bold">
-                              {book.quantity}
-                            </span>
-                            <button
-                              type="button"
-                              disabled={book.quantity >= available}
-                              onClick={() => increaseQuantity(book.id)}
-                              aria-label={`${copy.increaseQuantity} ${book.title}`}
-                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D5D5E0] bg-white text-[#4033C3] hover:bg-[#4033C3]/10 disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                              <Plus size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              <div className="mt-5 border-t border-[#E7E7ED] pt-5">
-                <p className="text-sm font-medium text-[#252432]">
-                  {copy.borrowerInfo}
+            {selectedBooks.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-[#D8D7E1] px-4 py-10 text-center">
+                <BookOpen
+                  size={30}
+                  className="mx-auto text-[#A6A4B3]"
+                />
+                <p className="mt-3 text-sm text-[#777582]">
+                  {copy.emptyBasket}
                 </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {selectedBooks.map((book) => (
+                  <div
+                    key={book.id}
+                    className="flex items-center justify-between gap-3 rounded-xl bg-[#F8F7F4] p-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="break-words text-sm font-semibold">
+                        {book.title}
+                      </p>
+                      <p className="mt-1 text-xs text-[#777582]">
+                        {book.quantity} {copy.copiesLabel}
+                      </p>
+                    </div>
 
+                    <div className="flex shrink-0 items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => decreaseQuantity(book.id)}
+                        disabled={isSubmitting}
+                        aria-label={copy.removeOne}
+                        title={copy.removeOne}
+                        className="rounded-lg border border-[#E7E7ED] bg-white p-2 transition hover:border-[#4033C3] disabled:opacity-50"
+                      >
+                        <Minus size={15} />
+                      </button>
+
+                      <span className="min-w-5 text-center text-sm font-semibold">
+                        {book.quantity}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => increaseQuantity(book.id)}
+                        disabled={
+                          isSubmitting ||
+                          book.quantity >=
+                            book.totalCopies - book.borrowedCopies
+                        }
+                        aria-label={copy.addOne}
+                        title={copy.addOne}
+                        className="rounded-lg border border-[#E7E7ED] bg-white p-2 transition hover:border-[#4033C3] disabled:opacity-50"
+                      >
+                        <Plus size={15} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <form onSubmit={confirmLoan} className="space-y-4">
+              <div className="space-y-2">
                 <label
                   htmlFor="borrowerName"
-                  className="mb-2 mt-4 flex items-center gap-2 text-sm text-[#777783]"
+                  className="flex items-center gap-2 text-sm font-medium"
                 >
                   <UserRound size={16} />
-                  {copy.borrowerName}
+                  {copy.borrower}
                 </label>
+
                 <input
                   id="borrowerName"
                   type="text"
                   value={borrowerName}
-                  onChange={(event) => setBorrowerName(event.target.value)}
+                  onChange={(event) =>
+                    setBorrowerName(event.target.value)
+                  }
                   placeholder={copy.borrowerPlaceholder}
-                  className="w-full rounded-xl border border-[#D5D5E0] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#4033C3] focus:ring-2 focus:ring-[#4033C3]/10"
+                  maxLength={150}
+                  autoComplete="name"
+                  className={inputClass}
+                  required
                 />
+              </div>
 
+              <div className="space-y-2">
                 <label
                   htmlFor="dueDate"
-                  className="mb-2 mt-4 flex items-center gap-2 text-sm text-[#777783]"
+                  className="flex items-center gap-2 text-sm font-medium"
                 >
                   <CalendarDays size={16} />
                   {copy.dueDate}
                 </label>
+
                 <input
                   id="dueDate"
                   type="date"
-                  min={todayString}
                   value={dueDate}
-                  onChange={(event) => setDueDate(event.target.value)}
-                  className="w-full rounded-xl border border-[#D5D5E0] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#4033C3] focus:ring-2 focus:ring-[#4033C3]/10"
-                />
-
-                {message && (
-                  <p
-                    role="status"
-                    className={`mt-4 flex items-start gap-2 rounded-xl p-3 text-sm ${
-                      [copy.loanSuccess, copy.returnSuccess].includes(message)
-                        ? "bg-emerald-50 text-emerald-700"
-                        : "bg-amber-50 text-amber-800"
-                    }`}
-                  >
-                    {[copy.loanSuccess, copy.returnSuccess].includes(message) ? (
-                      <CheckCircle2 className="mt-0.5 shrink-0" size={16} />
-                    ) : (
-                      <CircleAlert className="mt-0.5 shrink-0" size={16} />
-                    )}
-                    {message}
-                  </p>
-                )}
-
-                <button
-                  type="button"
-                  onClick={confirmLoan}
-                  disabled={
-                    !borrowerName.trim() ||
-                    !dueDate ||
-                    selectedBooks.length === 0 ||
-                    isSubmitting
+                  onChange={(event) =>
+                    setDueDate(event.target.value)
                   }
-                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#4033C3] px-4 py-3 font-semibold text-white transition hover:bg-[#5144D8] disabled:cursor-not-allowed disabled:bg-[#E7E7ED] disabled:text-[#777783]"
-                >
-                  {isSubmitting ? (isPersian ? "در حال ثبت..." : "Saving...") : copy.confirmLoan}
-                  <ArrowRight
-                    size={17}
-                    className={isPersian ? "rotate-180" : ""}
+                  min={todayString}
+                  className={inputClass}
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={
+                  isSubmitting ||
+                  isLoading ||
+                  selectedBooks.length === 0
+                }
+                className={`${primaryButtonClass} w-full`}
+              >
+                {isSubmitting ? (
+                  <LoaderCircle
+                    size={18}
+                    className="animate-spin"
                   />
-                </button>
-              </div>
-            </section>
+                ) : (
+                  <BookCheck size={18} />
+                )}
+                {isSubmitting
+                  ? copy.submitting
+                  : copy.confirmLoan}
+              </button>
+            </form>
+          </section>
+        </div>
 
-            <section className="rounded-2xl border border-[#E7E7ED] bg-white p-5 shadow-sm sm:p-6">
-              <div>
-                <p className="text-sm font-medium text-[#4033C3]">
-                  {copy.loanActivity}
-                </p>
-                <h2 className="mt-1 text-xl font-bold text-[#252432]">
-                  {copy.recentLoans}
-                </h2>
-              </div>
+        <section className={`${cardClass} space-y-5`}>
+          <div>
+            <h2 className="text-lg font-bold">{copy.loanHistory}</h2>
+            <p className="mt-1 text-sm text-[#777582]">
+              {copy.subtitle}
+            </p>
+          </div>
 
-              {activeLoans.length === 0 ? (
-                <div className="mt-5 rounded-xl bg-[#F8F7F4] px-4 py-6 text-center">
-                  <p className="text-sm text-[#777783]">
-                    {copy.noLoans}
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-5 space-y-3">
-                  {[...activeLoans].reverse().map((loan) => (
-                    <article
-                      key={loan.id}
-                      className="rounded-xl border border-[#E7E7ED] p-4"
+          {isLoading ? (
+            <div className="flex items-center justify-center gap-2 py-10 text-sm text-[#777582]">
+              <LoaderCircle size={20} className="animate-spin" />
+              {copy.loading}
+            </div>
+          ) : activeLoans.length === 0 ? (
+            <p className="py-8 text-center text-sm text-[#777582]">
+              {copy.noLoans}
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {activeLoans.map((loan) => (
+                <article
+                  key={loan.id}
+                  className="rounded-xl border border-[#E7E7ED] p-4"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="break-words font-semibold">
+                        {loan.borrowerName}
+                      </p>
+                      <p className="mt-1 text-xs text-[#777582]">
+                        {copy.due}: {formatDate(loan.dueDate, language)}
+                      </p>
+                    </div>
+
+                    <span
+                      className={`rounded-lg px-3 py-1 text-xs font-semibold ${
+                        loan.returned
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-orange-100 text-orange-700"
+                      }`}
                     >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <p className="font-semibold text-[#252432]">
-                            {loan.borrowerName}
-                          </p>
-                          <p className="mt-1 text-xs text-[#777783]">
-                            {copy.due} {loan.dueDate}
-                          </p>
-                        </div>
+                      {loan.returned ? copy.returned : copy.active}
+                    </span>
+                  </div>
 
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                            loan.returned
-                              ? "bg-emerald-50 text-emerald-700"
-                              : "bg-[#4033C3]/10 text-[#4033C3]"
-                          }`}
-                        >
-                          {loan.returned ? copy.returned : copy.active}
+                  <div className="mt-4 space-y-2">
+                    {loan.books.map((book, index) => (
+                      <div
+                        key={`${loan.id}-${book.id ?? index}`}
+                        className="flex items-start justify-between gap-3 text-sm"
+                      >
+                        <span className="break-words text-[#5E5C6B]">
+                          {book.title || copy.book}
+                        </span>
+                        <span className="shrink-0 font-medium">
+                          {book.quantity} ×
                         </span>
                       </div>
+                    ))}
+                  </div>
 
-                      <ul className="mt-3 space-y-1 text-sm text-[#777783]">
-                        {loan.books.map((book) => (
-                          <li key={book.id}>
-                            {book.title} × {book.quantity}
-                          </li>
-                        ))}
-                      </ul>
-
-                      {!loan.returned && (
-                        <button
-                          type="button"
-                          onClick={() => returnLoan(loan.id)}
-                          className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#252432] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#4033C3]"
-                        >
-                          <RotateCcw size={15} />
-                          {copy.returnBooks}
-                        </button>
+                  {!loan.returned && (
+                    <button
+                      type="button"
+                      onClick={() => returnLoan(loan.id)}
+                      disabled={returningLoanId !== null}
+                      className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#4033C3]/20 bg-[#4033C3]/5 px-4 py-3 text-sm font-semibold text-[#4033C3] transition hover:bg-[#4033C3]/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {returningLoanId === loan.id ? (
+                        <LoaderCircle
+                          size={17}
+                          className="animate-spin"
+                        />
+                      ) : (
+                        <RotateCcw size={17} />
                       )}
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
-          </div>
-        </div>
+                      {returningLoanId === loan.id
+                        ? copy.returning
+                        : copy.returnBook}
+                    </button>
+                  )}
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
-    </main>
+    </div>
   );
 }
 
